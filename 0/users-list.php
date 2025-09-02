@@ -172,7 +172,7 @@ $user_login_id = $sessionVars['user_login_id'];
     <!-- <script src="<?php echo BASE_PATH; ?>js_modal_scripts/searchbar.js"></script> -->
     <script src="<?php echo BASE_PATH; ?>js_modal_scripts/popover.js"></script>
 
-    <script src="<?php echo BASE_PATH; ?>assets/js/project/user-list1.js"></script>
+    <script src="<?php echo BASE_PATH; ?>assets/js/project/user-list.js"></script>
     <?php
     include(BASE_PATH . "assets/html/body-end.php");
     include(BASE_PATH . "assets/html/html-end.php");
