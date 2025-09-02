@@ -397,8 +397,7 @@ function updateSelectedAlerts() {
 			return false;
 		}
 	}
-
-	console.log(selectedNotification);
+	
 	if (confirm('Are you sure you want to update the selected notifications?')) {
 		$("#pre-loader").css('display', 'block');
 		$.ajax({
@@ -429,6 +428,7 @@ function updateSelectedAlerts() {
 }
 
 function loadUpdatedAlerts(device_id) {
+	
 	$("#pre-loader").css('display', 'block');
 	$(function() {
 		$.ajax({
@@ -466,6 +466,7 @@ function loadUpdatedAlerts(device_id) {
 						}
 					});
 				} else {
+					
 					error_message_text.textContent = response_data.message;
 					error_toast.show();
 
@@ -483,7 +484,7 @@ function loadUpdatedAlerts(device_id) {
 					});
 				}
 			},
-			error: function(textStatus, errorThrown) {
+			error: function(textStatus, errorThrown) {			
 				error_message_text.textContent = "Error getting the data";
 				error_toast.show();
 				$("#pre-loader").css('display', 'none');
