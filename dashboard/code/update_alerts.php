@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 		$filter = ['device_id' => ['$in' => $device_ids]];
 
 		$options = [
-			'sort' => ['date_time' => -1],   
+			'sort' => ['_id' => -1],   
 			'limit' => 100
 		];
 

@@ -29,6 +29,7 @@ use MongoDB\Exception\ConnectionTimeoutException;
 use MongoDB\Operation\Find;
 
 $client = new Client("mongodb://Mongoadmin:istl_123456@216.48.182.199:27017/?appname=myapp&maxPoolSize=50");
+//$client = new Client("mongodb://Mongoadmin:istl_123456@103.101.59.93:27017/?appname=myapp&maxPoolSize=50");
 $devices_db_conn = $client->ccms_data;
 $user_db_conn = $client->ccms_user_db;
 

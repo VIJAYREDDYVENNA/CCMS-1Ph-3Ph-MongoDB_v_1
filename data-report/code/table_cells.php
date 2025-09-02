@@ -15,7 +15,19 @@ if(trim($r['signal_level']) != "")  // Check if signal_level is not an empty str
 
 /*$r['date_time']=date("H:i:s d-m-Y", strtotime($r['date_time']));*/
 
-$r['date_time']= $r['date_time']->toDateTime()->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
+//$r['date_time']= $r['date_time']->toDateTime()->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
+if (isset($r['date_time'])) {
+    if ($r['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
+        $dt = $r['date_time']->toDateTime();
+    } else {
+        $dt = new DateTime($r['date_time']); // if it's already string
+    }
+
+    $r['date_time'] = $dt->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
+} else {
+    $r['date_time'] = null;
+}
+
 
 $f1 = $r['device_id'];
 $f2 = $r['date_time'];
