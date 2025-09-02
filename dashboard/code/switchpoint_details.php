@@ -15,6 +15,8 @@ $device_list = array();
 $user_devices = "";
 $total_switch_point = 0;
 
+
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 	$group_id = $_POST['GROUP_ID'];
 
@@ -260,6 +262,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
         	"MANUAL_ON" => $manual_on,
         	"OFF" => $off
         );
+		
     } catch (Exception $e) {
     	error_log("Error fetching device data: " . $e->getMessage());
     	$return_response = array(
@@ -315,4 +318,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 
 // Output JSON response
 echo json_encode($return_response);
+
 ?>
