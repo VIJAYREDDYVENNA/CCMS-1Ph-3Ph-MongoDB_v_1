@@ -44,20 +44,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Add condition according to $device_status
     switch ($device_status) {
         case "ACTIVE_DEVICES":
-            $filter['active_device'] = 1;
-            break;
+        $filter['active_device'] = 1;
+        break;
         case "POOR_NW_DEVICES":
-            $filter['poor_network'] = 1;
-            break;
+        $filter['poor_network'] = 1;
+        break;
         case "POWER_FAIL_DEVICES":
-            $filter['power_failure'] = 1;
-            break;
+        $filter['power_failure'] = 1;
+        break;
         case "FAULTY_DEVICES":
-            $filter['faulty'] = 1;
-            break;
+        $filter['faulty'] = 1;
+        break;
         default:
             // No extra filter
-            break;
+        break;
     }
 
     $options = [
@@ -75,12 +75,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $ping_date_time = '';
             $location = $r['location'] ?? '0,0';
 
-            if (isset($r['date_time']) && $r['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
+            if (isset($r['date_time'])) {
+                if ($r['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
+                    $dt = $r['date_time']->toDateTime();
+                } else {
+                    $dt = new DateTime($r['date_time']);
+                }
+                $frame_date_time = $dt->modify('+5 hours 30 minutes')->format("H:i:s d-m-Y");
+            }
+            if (isset($r['ping_time'])) {
+                if ($r['ping_time'] instanceof MongoDB\BSON\UTCDateTime) {
+                    $dt = $r['ping_time']->toDateTime();
+                } else {
+                    $dt = new DateTime($r['ping_time']);
+                }
+                $ping_date_time = $dt->modify('+5 hours 30 minutes')->format("H:i:s d-m-Y");
+            }
+
+            
+
+           /* if (isset($r['date_time']) && $r['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
                 $frame_date_time = $r['date_time']->toDateTime()->modify('+5 hours 30 minutes')->format("H:i:s d-m-Y");
-            }
-            if (isset($r['ping_time']) && $r['ping_time'] instanceof MongoDB\BSON\UTCDateTime) {
+            }*/
+           /* if (isset($r['ping_time']) && $r['ping_time'] instanceof MongoDB\BSON\UTCDateTime) {
                 $ping_date_time = $r['ping_time']->toDateTime()->modify('+5 hours 30 minutes')->format("H:i:s d-m-Y");
-            }
+            }*/
             if (isset($r['installed_date']) && $r['installed_date'] instanceof MongoDB\BSON\UTCDateTime) {
                 $installed_date = $r['installed_date']->toDateTime()->format("Y-m-d");
             }
@@ -104,29 +123,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Compose table row HTML according to device status
             switch ($device_status) {
                 case "ACTIVE_DEVICES":
-                    $btnClass = 'text-success bg-success-subtle';
-                    break;
+                $btnClass = 'text-success bg-success-subtle';
+                break;
                 case "POOR_NW_DEVICES":
-                    $btnClass = 'btn-warning';
-                    break;
+                $btnClass = 'btn-warning';
+                break;
                 case "FAULTY_DEVICES":
-                    $btnClass = 'text-danger bg-danger-subtle';
-                    break;
+                $btnClass = 'text-danger bg-danger-subtle';
+                break;
                 case "POWER_FAIL_DEVICES":
-                    $btnClass = 'bg-secondary-subtle';
-                    break;
+                $btnClass = 'bg-secondary-subtle';
+                break;
                 default:
-                    $btnClass = '';
-                    break;
+                $btnClass = '';
+                break;
             }
 
             $return_response .= '<tr>
-                <td>' . htmlspecialchars($device_id) . '</td>
-                <td>' . htmlspecialchars($name) . '</td>
-                <td class="col-size-1">' . $frame_date_time . '</td>
-                <td class="col-size-1">' . $ping_date_time . '</td>
-                <td><button class="btn fw-semibold ' . $btnClass . ' btn-sm p-0 px-2" onclick="openOpenviewModal(\'' . htmlspecialchars($device_id) . '\')">View</button></td>
-                <td>' . $address . '</td>
+            <td>' . htmlspecialchars($device_id) . '</td>
+            <td>' . htmlspecialchars($name) . '</td>
+            <td class="col-size-1">' . $frame_date_time . '</td>
+            <td class="col-size-1">' . $ping_date_time . '</td>
+            <td><button class="btn fw-semibold ' . $btnClass . ' btn-sm p-0 px-2" onclick="openOpenviewModal(\'' . htmlspecialchars($device_id) . '\')">View</button></td>
+            <td>' . $address . '</td>
             </tr>';
         }
 

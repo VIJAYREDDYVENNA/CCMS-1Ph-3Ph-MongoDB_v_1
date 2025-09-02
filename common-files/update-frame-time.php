@@ -21,17 +21,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $frame_date_time = "--";
             $ping_date_time = "--";
 
-            if (isset($document['date_time']) && $document['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
-                $dt = $document['date_time']->toDateTime();
+            if (isset($document['date_time'])) {
+                if ($document['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
+                    $dt = $document['date_time']->toDateTime();
+                } else {
+                    $dt = new DateTime($document['date_time']);
+                }
                 $dt->modify('+5 hours 30 minutes');
                 $frame_date_time = $dt->format("H:i:s d-m-Y");
             }
 
-            if (isset($document['ping_time']) && $document['ping_time'] instanceof MongoDB\BSON\UTCDateTime) {
-                $dt2 = $document['ping_time']->toDateTime();
+            if (isset($document['ping_time'])) {
+                if ($document['ping_time'] instanceof MongoDB\BSON\UTCDateTime) {
+                    $dt2 = $document['ping_time']->toDateTime();
+                } else {
+                    $dt2 = new DateTime($document['ping_time']);
+                }
                 $dt2->modify('+5 hours 30 minutes');
                 $ping_date_time = $dt2->format("H:i:s d-m-Y");
             }
+
 
             $return_response = [
                 "DATE_TIME" => $frame_date_time,
