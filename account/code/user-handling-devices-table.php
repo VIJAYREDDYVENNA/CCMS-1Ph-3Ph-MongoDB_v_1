@@ -1,0 +1,82 @@
+<?php
+require_once '../../base-path/config-path.php';
+require_once BASE_PATH_1 . 'config_db/config.php';
+require_once BASE_PATH_1 . 'session/session-manager.php';
+
+SessionManager::checkSession();
+$sessionVars = SessionManager::SessionVariables();
+
+$mobile_no = $sessionVars['mobile_no'];
+$user_id = $sessionVars['user_id'];
+$role = $sessionVars['role'];
+$user_login_id = $sessionVars['user_login_id'];
+$user_name = $sessionVars['user_name'];
+$user_email = $sessionVars['user_email'];
+
+$response = ["data" => [], "totalPages" => 0];
+
+if ($_SERVER["REQUEST_METHOD"] == "GET") {
+    // Sanitize inputs
+    $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 20;
+    $search_item = isset($_GET['search_item']) ? trim($_GET['search_item']) : '';
+    $user_devices = isset($_GET['user_devices']) ? trim($_GET['user_devices']) : 0;
+
+    if ($page < 1) $page = 1;
+    if ($limit < 1) $limit = 20;
+
+    $offset = ($page - 1) * $limit;
+
+    // MongoDB collection for the user device group view equivalent
+    // Assuming you have a collection named 'user_device_group_view' in MongoDB
+    $collection = $user_db_conn->user_device_group_view;
+
+    // Build query filter
+    $filter = ['login_id' => (int)$user_devices];
+
+    if ($search_item !== '') {
+        $searchRegex = new MongoDB\BSON\Regex($search_item, 'i'); // case-insensitive regex
+        $filter['$or'] = [
+            ['device_id' => $searchRegex],
+            ['c_device_name' => $searchRegex]
+        ];
+    }
+
+    // Count total documents matching the filter
+    $totalRecords = $collection->countDocuments($filter);
+    $totalPages = ceil($totalRecords / $limit);
+
+    // Projection fields to fetch
+    $projection = [
+        'device_id' => 1,
+        'c_device_name' => 1,
+        'device_group_or_area' => 1,
+        '_id' => 0, // exclude MongoDB _id from output for parity with MySQL
+    ];
+
+    // Find documents with filter, projection, limit, skip for pagination
+    $options = [
+        'limit' => $limit,
+        'skip' => $offset,
+        'projection' => $projection,
+    ];
+
+    $cursor = $collection->find($filter, $options);
+
+    $data = [];
+    foreach ($cursor as $doc) {
+        // Rename keys to match MySQL alias (device_name for c_device_name)
+        $data[] = [
+            'device_id'           => isset($doc['device_id']) ? $doc['device_id'] : null,
+            'device_name'         => isset($doc['c_device_name']) ? $doc['c_device_name'] : null,
+            'device_group_or_area'=> isset($doc['device_group_or_area']) ? $doc['device_group_or_area'] : null,
+        ];
+    }
+
+    $response = ['data' => $data, 'totalPages' => $totalPages];
+
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit();
+}
+?>
