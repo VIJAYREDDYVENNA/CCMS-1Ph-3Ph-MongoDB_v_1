@@ -16,69 +16,71 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["GROUP_ID"])) {
     $group_id = strtoupper(trim($_POST['GROUP_ID']));
     $selected_phase = strtoupper($_SESSION["SELECTED_PHASE"]);
 
-    $conn_user = mysqli_connect(HOST, USERNAME, PASSWORD, DB_USER);
-    if (!$conn_user) {
-        die(json_encode(["status" => "error", "message" => "Database connection failed."]));
-    }
+    // Default group_by
+    $group_by = "device_group_or_area";
 
-    require_once(BASE_PATH_1 . "common-files/client-super-admin-device-names.php"); // defines $list
-    $group_by = "device_group_or_area"; // default
-
+    // 🔹 If group_id == ALL
     if ($group_id === "ALL") {
-        $sql = "SELECT $list FROM user_device_list WHERE login_id = ? ";
-        if ($selected_phase !== "ALL") {
-            $sql .= "AND phase = ? ";
-        }
-        $sql .= "AND device_id NOT IN (SELECT device_id FROM electrician_devices) ";
-        $sql .= "ORDER BY REGEXP_REPLACE(device_id, '[0-9]', ''), CAST(REGEXP_REPLACE(device_id, '[^0-9]', '') AS UNSIGNED)";
+        $filter = ["login_id" => intval($user_login_id)];
 
-        $stmt = mysqli_prepare($conn_user, $sql);
         if ($selected_phase !== "ALL") {
-            mysqli_stmt_bind_param($stmt, "is", $user_login_id, $selected_phase);
-        } else {
-            mysqli_stmt_bind_param($stmt, "i", $user_login_id);
+            $filter["phase"] = $selected_phase;
         }
+
+        // Exclude devices already in electrician_devices
+        $assignedDevices = $devices_db_conn->electrician_devices->distinct("device_id");
+        if (!empty($assignedDevices)) {
+            $filter["device_id"] = ['$nin' => $assignedDevices];
+        }
+
+        $cursor = $user_db_conn->user_device_list->find(
+            $filter,
+            ["projection" => ["device_id" => 1, "device_name" => 1]]
+        );
 
     } else {
-        // Get group_by column for current login_id
-        $sql_group = "SELECT group_by FROM device_selection_group WHERE login_id = ?";
-        $stmt_group = mysqli_prepare($conn_user, $sql_group);
-        mysqli_stmt_bind_param($stmt_group, "i", $user_login_id);
-        mysqli_stmt_execute($stmt_group);
-        mysqli_stmt_bind_result($stmt_group, $group_by);
-        mysqli_stmt_fetch($stmt_group);
-        mysqli_stmt_close($stmt_group);
+        // 🔹 Get group_by from device_selection_group
+        $groupData = $user_db_conn->device_selection_group->findOne(
+            ["login_id" => intval($user_login_id)],
+            ["projection" => ["group_by" => 1]]
+        );
 
-        // Fetch device list based on group_id and phase
-        $sql = "SELECT $list FROM user_device_group_view WHERE login_id = ? AND $group_by = ? ";
-        if ($selected_phase !== "ALL") {
-            $sql .= "AND phase = ? ";
+        if ($groupData && isset($groupData["group_by"])) {
+            $group_by = $groupData["group_by"];
         }
-        $sql .= "AND device_id NOT IN (SELECT device_id FROM electrician_devices) ";
-        $sql .= "ORDER BY REGEXP_REPLACE(device_id, '[0-9]', ''), CAST(REGEXP_REPLACE(device_id, '[^0-9]', '') AS UNSIGNED)";
 
-        $stmt = mysqli_prepare($conn_user, $sql);
+        // Build filter
+        $filter = [
+            "login_id" => intval($user_login_id),
+            $group_by => $group_id
+        ];
+
         if ($selected_phase !== "ALL") {
-            mysqli_stmt_bind_param($stmt, "iss", $user_login_id, $group_id, $selected_phase);
-        } else {
-            mysqli_stmt_bind_param($stmt, "is", $user_login_id, $group_id);
+            $filter["phase"] = $selected_phase;
         }
+
+        // Exclude already assigned
+        $assignedDevices = $devices_db_conn->electrician_devices->distinct("device_id");
+        if (!empty($assignedDevices)) {
+            $filter["device_id"] = ['$nin' => $assignedDevices];
+        }
+
+        $cursor = $user_db_conn->user_device_group_view->find(
+            $filter,
+            ["projection" => ["device_id" => 1, "device_name" => 1]]
+        );
     }
 
-    if (mysqli_stmt_execute($stmt)) {
-        $result = mysqli_stmt_get_result($stmt);
-        if ($result) {
-            while ($r = mysqli_fetch_assoc($result)) {
-                $device_list[] = ["D_ID" => $r['device_id'], "D_NAME" => $r['device_name']];
-            }
-        }
+    // 🔹 Prepare response (safe access for device_name)
+    foreach ($cursor as $doc) {
+        $device_list[] = [
+            "D_ID" => $doc['device_id'] ?? "",
+            "D_NAME" => $doc['device_name'] ?? $doc['device_id'] // fallback
+        ];
     }
-
-    mysqli_stmt_close($stmt);
-    mysqli_close($conn_user);
 
     echo json_encode($device_list);
+
 } else {
     echo json_encode(["status" => "error", "message" => "Invalid request."]);
 }
-?>

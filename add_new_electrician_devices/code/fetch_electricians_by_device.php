@@ -10,180 +10,124 @@ $user_id = $sessionVars['user_id'];
 $role = $sessionVars['role'];
 $user_login_id = $sessionVars['user_login_id'];
 $user_devices = "";
+
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["group_id"])) {
-    $group_id = $_POST['group_id'];
+    $group_id = strtoupper(trim($_POST['group_id']));
     include_once(BASE_PATH_1 . "common-files/selecting_group_device.php");
+
     if ($user_devices != "") {
-        $user_devices = substr($user_devices, 0, -1);
+        // Convert string of devices to array
+        $user_devices = explode(",", rtrim($user_devices, ","));
+    } else {
+        $user_devices = [];
     }
-
-    $conn = mysqli_connect(HOST, USERNAME, PASSWORD, DB_USER);
-    if (!$conn) {
-        die(json_encode(["status" => "error", "message" => "Database connection failed."]));
-    }
-
-    $group_id = mysqli_real_escape_string($conn, $group_id);
 
     $electricians = [];
     $unassigned_devices = [];
     $group_areas = [];
-    $group_areas_sql = "";
-    $group_by = null;
-    
-    if ($group_id === "ALL") {
-        // Fetch all electricians
-        $sql_electricians = "SELECT id, electrician_name, phone_number, device_id FROM electrician_devices WHERE device_id IN ($user_devices)";
-        $stmt = mysqli_prepare($conn, $sql_electricians);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
+    $group_by = "device_group_or_area"; // default
 
-        while ($row = mysqli_fetch_assoc($result)) {
+    if ($group_id === "ALL") {
+        // 🔹 Fetch all electricians with assigned devices
+        $cursor = $devices_db_conn->electrician_devices->find(
+            ["device_id" => ['$in' => $user_devices]],
+            ["projection" => ["id" => 1, "electrician_name" => 1, "phone_number" => 1, "device_id" => 1]]
+        );
+
+        foreach ($cursor as $row) {
             $electricians[] = [
-                "id" => $row["id"],
-                "name" => $row["electrician_name"],
-                "phone" => $row["phone_number"],
-                "device_id" => $row["device_id"]
+                "id" => $row["id"] ?? "",
+                "name" => $row["electrician_name"] ?? "",
+                "phone" => $row["phone_number"] ?? "",
+                "device_id" => $row["device_id"] ?? ""
             ];
         }
-        mysqli_stmt_close($stmt);
 
-        // Fetch unassigned devices
-        $sql_devices = "SELECT DISTINCT device_id, c_device_name 
-                        FROM user_device_list 
-                        WHERE device_id NOT IN (
-                            SELECT device_id FROM electrician_devices WHERE user_login_id = ?
-                        )
-                        GROUP BY device_id, c_device_name";
-        $stmt = mysqli_prepare($conn, $sql_devices);
-        mysqli_stmt_bind_param($stmt, "i", $user_login_id);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
+        // 🔹 Fetch unassigned devices (exclude devices already in electrician_devices)
+        $assignedDevices = $devices_db_conn->electrician_devices->distinct("device_id", ["user_login_id" => intval($user_login_id)]);
+        $cursor = $user_db_conn->user_device_list->find(
+            [
+                "login_id" => intval($user_login_id),
+                "device_id" => ['$nin' => $assignedDevices]
+            ],
+            ["projection" => ["device_id" => 1, "c_device_name" => 1]]
+        );
 
-        while ($row = mysqli_fetch_assoc($result)) {
+        foreach ($cursor as $row) {
             $unassigned_devices[] = [
                 "device_id" => $row["device_id"],
-                "device_name" => $row["c_device_name"]
+                "device_name" => $row["c_device_name"] ?? $row["device_id"]
             ];
         }
-        mysqli_stmt_close($stmt);
+
     } else {
-        // Get the group_by value first
-        $sql_group = "SELECT group_by FROM device_selection_group WHERE login_id = ?";
-        $stmt_group = mysqli_prepare($conn, $sql_group);
-        
-        if ($stmt_group) {
-            mysqli_stmt_bind_param($stmt_group, "i", $user_login_id);
-            mysqli_stmt_execute($stmt_group);
-            $result = mysqli_stmt_get_result($stmt_group);
-            if ($row = mysqli_fetch_assoc($result)) {
-                $group_by = $row['group_by'];
-            }
-            mysqli_stmt_close($stmt_group);
+        // 🔹 Get group_by for this user
+        $groupData = $user_db_conn->device_selection_group->findOne(
+            ["login_id" => intval($user_login_id)],
+            ["projection" => ["group_by" => 1]]
+        );
+        if ($groupData && isset($groupData["group_by"])) {
+            $group_by = $groupData["group_by"];
         }
-      
+
+        // 🔹 Find group_areas if group_by != default
         if ($group_by !== "device_group_or_area") {
-            $sql_group_area = "";
-
-            switch ($group_by) {
-                case "state":
-                    $sql_group_area = "SELECT DISTINCT device_group_or_area FROM user_device_group_view WHERE state = ?";
-                    break;
-                case "district":
-                    $sql_group_area = "SELECT DISTINCT device_group_or_area FROM user_device_group_view WHERE district = ?";
-                    break;
-                case "city_or_town":
-                    $sql_group_area = "SELECT DISTINCT device_group_or_area FROM user_device_group_view WHERE city_or_town = ?";
-                    break;
-            }
-
-            if (!empty($sql_group_area)) {
-                $stmt_area = mysqli_prepare($conn, $sql_group_area);
-                mysqli_stmt_bind_param($stmt_area, "s", $group_id);
-                mysqli_stmt_execute($stmt_area);
-                $result = mysqli_stmt_get_result($stmt_area);
-                
-                // Build comma-separated quoted string for SQL IN clause
-                $group_areas_sql = "";
-                while ($row = mysqli_fetch_assoc($result)) {
-                    $group_areas[] = $row['device_group_or_area'];
-                    $group_areas_sql .= "'" . mysqli_real_escape_string($conn, $row['device_group_or_area']) . "',";
-                }
-                
-                // Remove trailing comma
-                if (!empty($group_areas_sql)) {
-                    $group_areas_sql = rtrim($group_areas_sql, ',');
-                }
-                
-                mysqli_stmt_close($stmt_area);
-            }
+            $filter = [$group_by => $group_id];
+            $cursor = $user_db_conn->user_device_group_view->distinct("device_group_or_area", $filter);
+            $group_areas = $cursor;
         }
-        
-        // Only proceed if there are devices to query
-        if (!empty($user_devices)) {
-            // Use the group_areas_sql in the IN clause if available, otherwise use the original group_id
-            if (!empty($group_areas_sql)) {
-                $sql_electricians = "SELECT id, electrician_name, phone_number, device_id 
-                                    FROM electrician_devices 
-                                    WHERE group_area IN ($group_areas_sql) AND device_id IN ($user_devices)";
-                $stmt = mysqli_prepare($conn, $sql_electricians);
-                mysqli_stmt_execute($stmt);
-            } else {
-                $sql_electricians = "SELECT id, electrician_name, phone_number, device_id 
-                                    FROM electrician_devices 
-                                    WHERE group_area = ? AND device_id IN ($user_devices)";
-                $stmt = mysqli_prepare($conn, $sql_electricians);
-                mysqli_stmt_bind_param($stmt, "s", $group_id);
-                mysqli_stmt_execute($stmt);
-            }
-            
-            $result = mysqli_stmt_get_result($stmt);
 
-            while ($row = mysqli_fetch_assoc($result)) {
+        // 🔹 Fetch electricians
+        if (!empty($user_devices)) {
+            if (!empty($group_areas)) {
+                $cursor = $devices_db_conn->electrician_devices->find(
+                    ["group_area" => ['$in' => $group_areas], "device_id" => ['$in' => $user_devices]],
+                    ["projection" => ["id" => 1, "electrician_name" => 1, "phone_number" => 1, "device_id" => 1]]
+                );
+            } else {
+                $cursor = $devices_db_conn->electrician_devices->find(
+                    ["group_area" => $group_id, "device_id" => ['$in' => $user_devices]],
+                    ["projection" => ["id" => 1, "electrician_name" => 1, "phone_number" => 1, "device_id" => 1]]
+                );
+            }
+
+            foreach ($cursor as $row) {
                 $electricians[] = [
-                    "id" => $row["id"],
-                    "name" => $row["electrician_name"],
-                    "phone" => $row["phone_number"],
-                    "device_id" => $row["device_id"]
+                    "id" => $row["id"] ?? "",
+                    "name" => $row["electrician_name"] ?? "",
+                    "phone" => $row["phone_number"] ?? "",
+                    "device_id" => $row["device_id"] ?? ""
                 ];
             }
-            mysqli_stmt_close($stmt);
         }
 
-        // Fetch unassigned devices for that group
-        if (!empty($group_areas_sql)) {
-            $sql_devices = "SELECT DISTINCT device_id, c_device_name 
-                           FROM user_device_group_view 
-                           WHERE device_group_or_area IN ($group_areas_sql) AND device_id NOT IN (
-                               SELECT device_id 
-                               FROM electrician_devices 
-                               WHERE group_area IN ($group_areas_sql) AND user_login_id = ?
-                           )";
-            $stmt = mysqli_prepare($conn, $sql_devices);
-            mysqli_stmt_bind_param($stmt, "i", $user_login_id);
+        // 🔹 Fetch unassigned devices
+        $assignedDevices = $devices_db_conn->electrician_devices->distinct("device_id", ["user_login_id" => intval($user_login_id)]);
+        if (!empty($group_areas)) {
+            $cursor = $user_db_conn->user_device_group_view->find(
+                [
+                    "device_group_or_area" => ['$in' => $group_areas],
+                    "device_id" => ['$nin' => $assignedDevices]
+                ],
+                ["projection" => ["device_id" => 1, "c_device_name" => 1]]
+            );
         } else {
-            $sql_devices = "SELECT DISTINCT device_id, c_device_name 
-                           FROM user_device_group_view 
-                           WHERE device_group_or_area = ? AND device_id NOT IN (
-                               SELECT device_id 
-                               FROM electrician_devices 
-                               WHERE group_area = ? AND user_login_id = ?
-                           )";
-            $stmt = mysqli_prepare($conn, $sql_devices);
-            mysqli_stmt_bind_param($stmt, "ssi", $group_id, $group_id, $user_login_id);
+            $cursor = $user_db_conn->user_device_group_view->find(
+                [
+                    "device_group_or_area" => $group_id,
+                    "device_id" => ['$nin' => $assignedDevices]
+                ],
+                ["projection" => ["device_id" => 1, "c_device_name" => 1]]
+            );
         }
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
 
-        while ($row = mysqli_fetch_assoc($result)) {
+        foreach ($cursor as $row) {
             $unassigned_devices[] = [
                 "device_id" => $row["device_id"],
-                "device_name" => $row["c_device_name"]
+                "device_name" => $row["c_device_name"] ?? $row["device_id"]
             ];
         }
-        mysqli_stmt_close($stmt);
     }
-
-    mysqli_close($conn);
 
     echo json_encode([
         "group_by" => $group_by,
@@ -191,6 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["group_id"])) {
         "electricians" => $electricians,
         "unassigned_devices" => $unassigned_devices
     ]);
+
 } else {
     echo json_encode([]);
 }
