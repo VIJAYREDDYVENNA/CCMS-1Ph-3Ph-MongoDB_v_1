@@ -232,18 +232,18 @@ SessionManager::checkSession();
 
                                         <div class="card-body d-flex flex-column ">
                                             <div class="text-center mb-3">
-                                                <h2 id="total-lights">1250</h2>
+                                                <h2 id="total-lights">--</h2>
                                                 <p class="text-muted mb-3">Total Lights Installed</p>
                                                 <div class="row g-2">
                                                     <div class="col-6">
                                                         <div class="p-2 bg-success bg-opacity-10 rounded">
-                                                            <h4 id="lights-on-percentage" class="text-success-emphasis mb-0">78%</h4>
+                                                            <h4 id="lights-on-percentage" class="text-success-emphasis mb-0">--%</h4>
                                                             <small>On</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-6">
                                                         <div class="p-2 bg-danger bg-opacity-10 rounded">
-                                                            <h4 id="lights-off-percentage" class="text-danger mb-0">22%</h4>
+                                                            <h4 id="lights-off-percentage" class="text-danger mb-0">--%</h4>
                                                             <small>Off</small>
                                                         </div>
                                                     </div>
@@ -267,18 +267,18 @@ SessionManager::checkSession();
 
                                         <div class="card-body d-flex flex-column pointer">
                                             <div class="text-center mb-3">
-                                                <h2 id="total-ccms">45</h2>
+                                                <h2 id="total-ccms">--</h2>
                                                 <p class="text-muted mb-3">Total CCMS Devices</p>
                                                 <div class="row g-2">
                                                     <div class="col-6">
                                                         <div class="p-2 bg-success bg-opacity-10 rounded cursor-pointer" onclick="activeModal()">
-                                                            <h4 id="ccms-on" class="text-success-emphasis mb-0">38</h4>
+                                                            <h4 id="ccms-on" class="text-success-emphasis mb-0">--</h4>
                                                             <small>Active</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-6">
                                                         <div class="p-2 bg-danger bg-opacity-10 rounded cursor-pointer" onclick="openNonActiveModal()">
-                                                            <h4 id="ccms-off" class="text-danger mb-0">7</h4>
+                                                            <h4 id="ccms-off" class="text-danger mb-0">--</h4>
                                                             <small>InActive</small>
                                                         </div>
                                                     </div>
@@ -302,14 +302,14 @@ SessionManager::checkSession();
 
                                         <div class="card-body d-flex flex-column ">
                                             <div class="text-center mb-3">
-                                                <h2 id="cumulative-load"></h2>
+                                                <h2 id="cumulative-load">--</h2>
                                                 <p class="text-muted mb-3">Installed Load</p>
                                                 <div class="row g-2">
                                                     <!-- Active Load -->
                                                     <div class="col-12 col-md-6">
                                                         <div class="p-2 bg-primary bg-opacity-10 rounded d-flex align-items-center justify-content-center h-100 text-center">
                                                             <div>
-                                                                <h4 id="installed-load" class="text-primary mb-0"></h4>
+                                                                <h4 id="installed-load" class="text-primary mb-0">--</h4>
                                                                 <small>Active Load</small>
                                                             </div>
                                                         </div>
@@ -320,7 +320,7 @@ SessionManager::checkSession();
                                                         <!-- Content injected by JS -->
                                                         <div class="p-2 bg-secondary bg-opacity-10 rounded d-flex align-items-center justify-content-center h-100 text-center">
                                                             <div>
-                                                                <h4 id="active-load" class="text-secondary mb-0"></h4>
+                                                                <h4 id="active-load" class="text-secondary mb-0">--</h4>
                                                                 <small>Inactive Load</small>
                                                             </div>
                                                         </div>
