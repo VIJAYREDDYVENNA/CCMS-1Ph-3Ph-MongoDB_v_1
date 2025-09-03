@@ -30,8 +30,23 @@ if (isset($_POST["date-range"]) && isset($_POST['device_id'])) {
 
     // Parse the date range
     list($from, $to) = explode(' to ', $dateRange);
-    $from = new MongoDB\BSON\UTCDateTime(strtotime($from . " 00:00:01") * 1000);
-    $to   = new MongoDB\BSON\UTCDateTime(strtotime($to   . " 23:59:59") * 1000);
+
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+    $startIST = DateTime::createFromFormat('Y-m-d H:i:s', $from.' 00:00:00', new DateTimeZone('Asia/Kolkata'));
+    $endIST   = DateTime::createFromFormat('Y-m-d H:i:s', $to.' 23:59:59', new DateTimeZone('Asia/Kolkata'));
+    $startUTC = clone $startIST; $startUTC->setTimezone(new DateTimeZone('UTC'));
+    $endUTC   = clone $endIST;   $endUTC->setTimezone(new DateTimeZone('UTC'));
+
+
+    $from = new MongoDB\BSON\UTCDateTime($startUTC->getTimestamp() * 1000);
+    $to   = new MongoDB\BSON\UTCDateTime($endUTC->getTimestamp() * 1000);
+//////////////////////////////////////////////////////////////////////////
+
+
 
     // Ensure date range does not exceed 30 days
     $dateDiff = (strtotime($to) - strtotime($from)) / (60 * 60 * 24);
@@ -85,7 +100,7 @@ if (isset($_POST["date-range"]) && isset($_POST['device_id'])) {
 
         // MongoDB Query
         $cursor = $collection->find(
-            ['date_time' => ['$gte' => $from, '$lte' => $to]],
+            ['device_id'=>$Deviceid, 'date_time' => ['$gte' => $from, '$lte' => $to]],
             ['projection' => $projection, 'sort' => ['id' => 1]]
         );
 
@@ -111,7 +126,7 @@ if (isset($_POST["date-range"]) && isset($_POST['device_id'])) {
                 if ($field === "id") continue; // skip internal id if needed
                 $value = isset($row[$field]) ? $row[$field] : "NULL";
                 if ($value instanceof MongoDB\BSON\UTCDateTime) {
-                    $value = $value->toDateTime()->format("Y-m-d H:i:s");
+                    $value = $value->toDateTime()->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
                 }
                 $schema_insert .= $value . "\t";
             }
