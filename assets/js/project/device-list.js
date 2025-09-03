@@ -18,9 +18,10 @@ let group_list = document.getElementById('group-list');
 
 group_list.addEventListener('change', function () {
     let group_name = group_list.value;
+ 
     if (group_name !== "" && group_name !== null) {
         $("#pre-loader").css('display', 'block');
-        add_device_list(group_name);
+        add_device_list(group_name,1, itemsPerPage);
 
     }
 });
@@ -46,110 +47,24 @@ function refresh_data() {
 
     }
 
-    //
+   
 
 }
 }
 
 
-// function add_device_list(group_id) {
-//     console.log(group_id);
-//     if (group_id !== "" && group_id !== null) {
 
-//         $.ajax({
-//             type: "POST",
-//             url: '../device-list/code/device-list-table.php',
-//             traditional: true,
-//             data: { GROUP_ID: group_id },
-//             dataType: "json",
-//             success: function (data) {
-//                 const device_list_table = document.getElementById('device_list_table');
-//                 device_list_table.innerHTML = '';
-
-//                 if (Object.keys(data).length) {
-
-
-//                     for (var i = 0; i < data.length; i++) {
-//                         if (data[i].ACTIVE_STATUS == 1) {
-//                             var newRow = document.createElement('tr');
-//                             newRow.innerHTML =
-//                                 '<td>' + data[i].D_ID + '</td>' +
-//                                 '<td>' + data[i].D_NAME + '</td>' +
-//                                 '<td>' + data[i].INSTALLED_STATUS + '</td>' +
-//                                 '<td>' + data[i].INSTALLED_DATE + '</td>' +
-//                                 '<td>' + data[i].KW + '</td>' +
-//                                 '<td class="col-size-1">' + data[i].DATE_TIME + '</td>' +
-//                                 '<td>' + data[i].ON_OFF_STATUS + '</td>' +
-//                                 '<td>' + data[i].OPERATION_MODE + '</td>' +
-//                                 '<td>' + data[i].WORKING_STATUS + '</td>' +
-//                                 '<td>' + data[i].LMARK + '</td>' +
-//                                 '<td>' + data[i].INSTALLED_LIGHTS + '</td>' +
-//                                 '<td>' +
-//                                 '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + data[i].REMOVE + '\')"></i>' +
-//                                 '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + data[i].D_ID + '\', \'' + data[i].D_NAME + '\')"></i>' +
-//                                 '</td>';
-//                             device_list_table.appendChild(newRow);
-//                         }
-
-
-//                     }
-//                     for (var i = 0; i < data.length; i++) {
-//                         if (data[i].ACTIVE_STATUS == 0) {
-//                             var newRow = document.createElement('tr');
-//                             newRow.innerHTML =
-//                                 '<td>' + data[i].D_ID + '</td>' +
-//                                 '<td>' + data[i].D_NAME + '</td>' +
-//                                 '<td>' + data[i].INSTALLED_STATUS + '</td>' +
-//                                 '<td>' + data[i].INSTALLED_DATE + '</td>' +
-//                                 '<td>' + data[i].KW + '</td>' +
-//                                 '<td class="col-size-1">' + data[i].DATE_TIME + '</td>' +
-//                                 '<td>' + data[i].ON_OFF_STATUS + '</td>' +
-//                                 '<td>' + data[i].OPERATION_MODE + '</td>' +
-//                                 '<td>' + data[i].WORKING_STATUS + '</td>' +
-//                                 '<td>' + data[i].LMARK + '</td>' +
-//                                 '<td>' + data[i].INSTALLED_LIGHTS + '</td>' +
-//                                 '<td>' +
-//                                 '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + data[i].REMOVE + '\')"></i>' +
-//                                 '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + data[i].D_ID + '\', \'' + data[i].D_NAME + '\')"></i>' +
-//                                 '</td>';
-//                             device_list_table.appendChild(newRow);
-//                         }
-//                     }
-//                 }
-//                 else {
-//                     var newRow = document.createElement('tr');
-//                     newRow.innerHTML = '<td class="text-danger" colspan="12">Device List not found</td>';
-//                     device_list_table.appendChild(newRow);
-//                 }
-//                 $("#pre-loader").css('display', 'none');
-//             },
-//             error: function (textStatus, errorThrown) {
-//                 error_message_text.textContent = "Error getting the data";
-//                 error_toast.show();
-//                 $("#pre-loader").css('display', 'none');
-//             },
-//             failure: function () {
-//                 error_message_text.textContent = "Failed to get the data";
-//                 error_toast.show();
-
-//                 error_message_text.textContent = "Failed to get the data";
-//                 error_toast.show();
-//                 $("#pre-loader").css('display', 'none');
-//             }
-//         });
-//     }
-// }
-
-// Event listener for input in the new device name field
-
+var itemsPerPage=20;
 document.getElementById('items-per-page').addEventListener("change", function () {
-    const itemsPerPage = document.getElementById('items-per-page').value;
-
+    itemsPerPage = document.getElementById('items-per-page').value;
+    // localStorage.setItem("itmPerPage", itemsPerPage);
     add_device_list(group_name, 1, itemsPerPage);
+    // console.log(itemsPerPage);
 });
-
+var pageNumber=1;
 function add_device_list(group_id, page = 1, itemsPerPage = 20) {
-
+// console.log(localStorage.getItem("itmPerPage"));
+// console.log(itemsPerPage);
     if (group_id !== "" && group_id !== null) {
         $.ajax({
             type: "POST",
@@ -206,7 +121,9 @@ function add_device_list(group_id, page = 1, itemsPerPage = 20) {
                     pagination.off("click").on("click", ".page-link", function (e) {
                         e.preventDefault();
                         const newPage = $(this).data("page");
-                        add_device_list(group_id, newPage, itemsPerPage);
+                        pageNumber=newPage;
+                        add_device_list(group_id, parseInt(pageNumber), parseInt(itemsPerPage));
+                    //   console.log(pageNumber,parseInt(itemsPerPage));
                     });
 
                 } else {
@@ -351,7 +268,7 @@ function updateDeviceName() {
             type: 'POST',
             data: { deviceId: deviceId, deviceName: newDeviceName },
             success: function (response) {
-                console.log(response);  // Log to check the response
+                
                 var result;
 
                 try {
@@ -375,8 +292,8 @@ function updateDeviceName() {
 
                     messageBox.style.display = 'block';  // Show the message box
                     let group_name = group_list.value;
-
-                    add_device_list(group_name);
+                    console.log(group_name,pageNumber,itemsPerPage);
+                    add_device_list(group_name,parseInt(pageNumber),parseInt(itemsPerPage));
                 } catch (e) {
                     console.error('Error parsing JSON response:', e);
                     messageBox.innerHTML = 'Invalid response from server.';
@@ -622,7 +539,8 @@ function addLight() {
                         });
                         var addLightModal = bootstrap.Modal.getInstance(document.getElementById('addLightModal'));
                         addLightModal.hide();
-                        add_device_list(group_name, 1, 20);
+                        
+                        add_device_list(group_name,parseInt(pageNumber), itemsPerPage);
                         openLightsModal(device_id, device_name);
 
                     } else {
@@ -696,7 +614,7 @@ function remove_Lights(element, device_id, _id,totalLights,totalWattage) {
                         backdrops.forEach(function (backdrop) {
                             backdrop.parentNode.removeChild(backdrop);
                         });
-                        add_device_list(group_name, 1, 20);
+                        add_device_list(group_name, pageNumber, itemsPerPage);
                         openLightsModal(device_id, device_name);
                     } else {
                         alert(response.message);
