@@ -59,10 +59,10 @@ function update_switchPoints_status(group_id) {
             $("#installed_lights_off").text(response.OFF_LIGHT);
             $("#installed_load").text("Installed Lights Load = " + (response.INSTALLED_LOAD / 1000).toFixed(3));
             $("#active_load").text((response.ACTIVE_LOAD / 1000).toFixed(3));
-            $("#total_consumption_units").text(response.KWH);
-            $("#energy_saved_units").text(response.SAVED_UNITS);
-            $("#amount_saved").text(response.SAVED_AMOUNT);
-            $("#co2_saved").text(response.SAVED_CO2);
+            $("#total_consumption_units").text(response.KWH); console.log(response.KWH);
+            $("#energy_saved_units").text(response.SAVED_UNITS);console.log(response.SAVED_UNITS);
+            $("#amount_saved").text(response.SAVED_AMOUNT);console.log(response.SAVED_AMOUNT);
+            $("#co2_saved").text(response.SAVED_CO2);console.log(response.SAVED_CO2);
 
 
             var totalLights = response.TOTAL_LIGHTS;

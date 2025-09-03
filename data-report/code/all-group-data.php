@@ -13,6 +13,8 @@ $user_name = $sessionVars['user_name'];
 $user_email = $sessionVars['user_email'];
 $permission_check = 0;
 
+ $selection="";
+
 $d_name = "";
 $data = "";
 $phase = "3PH";
