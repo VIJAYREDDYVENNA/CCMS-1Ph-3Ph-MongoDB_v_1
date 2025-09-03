@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 		$filter = ['device_id' => ['$in' => $device_ids]];
 
 		$options = [
-			'sort' => ['date_time' => -1],   
+			'sort' => ['_id' => -1],   
 			'limit' => 100
 		];
 
@@ -58,7 +58,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 		foreach ($cursor as $rl) {
 			$device_id_name = $rl['device_id_name'] ?? '';
 			$update = $rl['update'] ?? '';
-			$date_time = $rl['date_time'] ?? '';
+			/*$date_time = $rl['date_time'] ?? ''; */
+			$date_time = $rl['date_time']->toDateTime()->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
 
 			$return_response .= '<a href="#" class="list-group-item list-group-item-action" aria-current="true">
 			<div class="d-flex w-100 justify-content-between">
