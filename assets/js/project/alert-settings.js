@@ -313,6 +313,8 @@ $("#remove_device_from_group").click(function () {
 	var selected_devices=multipleValues.join( "," );
 
 	var device_id =selected_devices;
+
+	console.log(selected_group+" "+device_id);
 	if(selected_devices.length<=0)
 	{
 		error_message_text.textContent="Please select Devices...";
