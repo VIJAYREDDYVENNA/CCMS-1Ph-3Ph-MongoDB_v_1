@@ -1,6 +1,6 @@
 <nav class="navbar bg-body-tertiary fixed-top shadow">
   <div class="container-fluid">
-    <a href="#" class="navbar-brand d-flex align-items-center me-md-auto link-body-emphasis text-decoration-none" style="margin-top:-10px">
+    <a href="#" class="navbar-brand d-flex align-items-center me-auto link-body-emphasis text-decoration-none" style="margin-top:-10px">
       <img id="istl-logo" src="../assets/logos/istl_light.png" class="img-fluid" alt="iSTL Logo" alt="iScientific"> 
       <div class="name-and-tagline ms-2" >
         <div class="name fs-5 fw-bold" style="letter-spacing: -1px;">iScientific</div>
@@ -28,13 +28,13 @@
   include("theme-selection.php")
  ?>
 </div>
-      <div class="dropdown">
+      <div class="dropdown me-2 me-xl-0">
 
         <a href="#" class="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle " data-bs-toggle="dropdown" aria-expanded="false">
           <img src="../assets/photos/profile/profile.png" alt="" width="32" height="32" class="rounded-circle me-1">
           
         </a>
-        <ul class="dropdown-menu text-small shadow dropdown-menu-end pt-0" aria-labelledby="navbarDropdown">
+        <ul class="dropdown-menu text-small shadow dropdown-menu-end pt-0" style="transform: translate3d(-5px, 15px, 0px); width: 250px;" aria-labelledby="navbarDropdown">
           <li class="bg-dark-subtle py-2"><h6 class=" my-0 ms-2"> Welcome <strong><?php $sessionVars = SessionManager::SessionVariables();
           $user_name = $sessionVars['user_name']; echo  $user_name;?></strong></h6></li>
           <!-- <li><a class="dropdown-item bs-primary" href="#">Settings</a></li> -->
@@ -49,7 +49,7 @@
       </div>
 
     </div>
-    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+    <button class="navbar-toggler " type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
   </div>
