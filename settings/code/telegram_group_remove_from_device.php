@@ -11,96 +11,69 @@ $user_id = $sessionVars['user_id'];
 $role = $sessionVars['role'];
 $user_login_id = $sessionVars['user_login_id'];
 
-$permission_check = 0;
 $response = ["status" => "error", "message" => ""];
 
 if (isset($_POST['ID']) && isset($_POST['GROUP_ID'])) {
-	$id = filter_input(INPUT_POST, 'ID', FILTER_SANITIZE_STRING);
-	$GROUP_ID = filter_input(INPUT_POST, 'GROUP_ID', FILTER_SANITIZE_STRING);
+    $id = filter_input(INPUT_POST, 'ID', FILTER_SANITIZE_STRING);
+    $GROUP_ID = filter_input(INPUT_POST, 'GROUP_ID', FILTER_SANITIZE_STRING);
 
-	$send = "";
-	$conn = mysqli_connect(HOST, USERNAME, PASSWORD, DB_USER);
-	if (!$conn) {
-		die("Connection failed: " . mysqli_connect_error());
-	} else {
-		$id = sanitize_input($id, $conn);
-		$GROUP_ID = sanitize_input($GROUP_ID, $conn);
+    $user_permissions_collection = $user_db_conn->user_permissions;
+    $telegram_groups_new_collection = $user_db_conn->telegram_groups_new;
+    $telegram_groups_devices_collection = $user_db_conn->telegram_groups_devices;
 
-        // Check user permissions
-		$sql = "SELECT `notification_update` FROM user_permissions WHERE login_id = ?";
-		$stmt = mysqli_prepare($conn, $sql);
-		if ($stmt) {
-			mysqli_stmt_bind_param($stmt, "s", $user_login_id);
-			mysqli_stmt_execute($stmt);
-			mysqli_stmt_bind_result($stmt, $permission_check);
-			mysqli_stmt_fetch($stmt);
-			mysqli_stmt_close($stmt);
+    // Check user permissions
+    $permission_check = $user_permissions_collection->findOne(
+        ['login_id' => (int)$user_login_id], 
+        ['projection' => ['notification_update' => 1]]
+    );
 
-			if ($permission_check != 1) {
-				$response['status'] = 'error';
-				$response['message'] = "This account doesn't have permission to update.";
-				mysqli_close($conn);
-				sendResponse($response);
-			}
-		} else {
-			$response['status'] = 'error';
-			$response['message'] = "Error preparing query for user permissions: " . mysqli_error($conn);
-			mysqli_close($conn);
-			sendResponse($response);
-		}
+    if ($permission_check && $permission_check['notification_update'] != 1) {
+        $response['status'] = 'error';
+        $response['message'] = "This account doesn't have permission to update.";
+        sendResponse($response);
+    }
 
-		if ($permission_check == 1) {
-			date_default_timezone_set('Asia/Kolkata');
-			$date = date("Y-m-d H:i:s");
-			$group_id = 0;
+    if ($permission_check['notification_update'] == 1) {
+        // Get group_id from telegram_groups_new collection based on chat_id
+        $group = $telegram_groups_new_collection->findOne(['chat_id' => $GROUP_ID]);
+        $group_id = isset($group['chat_id']) ? $group['chat_id'] : null;
 
-            // Get group id from telegram_groups_new
-			$sql = "SELECT `id` FROM telegram_groups_new WHERE chat_id = '$GROUP_ID' LIMIT 1";
-			$result = mysqli_query($conn, $sql);
-			if ($result && mysqli_num_rows($result) > 0) {
-				$r = mysqli_fetch_assoc($result);
-				$group_id = $r["id"];
-			}
+        if ($group_id) {
+            // Prepare device list and remove devices associated with the group_id
+            $device_list = explode(',', $id); // Devices that need to be removed
+            $device_list = array_map('strtoupper', array_map('trim', $device_list)); // Sanitize device IDs
 
-            // Prepare multiple device query
-			$device_list = explode(',', $id);
-			$multi_query = "";
-			foreach ($device_list as $device) {
-				$multi_query .= "('" . strtoupper(trim($device)) . "', '" . $group_id . "'),";
-			}
-			$multi_query = rtrim($multi_query, ',');
+            // Remove devices from the telegram_groups_devices collection based on group_id and device_id
+            $delete_result = $telegram_groups_devices_collection->deleteMany(
+                [
+                    'device_id' => ['$in' => $device_list], // Match device IDs to be removed
+                    'chat_id' => $group_id // Match the group_id (chat_id)
+                ]
+            );
 
-			$qry = "DELETE FROM `telegram_groups_devices` WHERE (`device_id`, `group_id`) IN ($multi_query)";
+            if ($delete_result->getDeletedCount() > 0) {
+                $response['status'] = 'success';
+                $response['message'] = "Devices successfully removed from the group.";
+            } else {
+                $response['status'] = 'error';
+                $response['message'] = "No matching devices found to remove.";
+            }
+        } else {
+            $response['status'] = 'error';
+            $response['message'] = "Group with the provided chat_id not found.";
+        }
+    }
 
-			if (mysqli_query($conn, $qry)) {
-				$response['status'] = 'success';
-				$response['message'] = "Successfully Removed";
-			} else {
-				$response['status'] = 'error';
-				$response['message'] = "Please try again.";
-			}
-		}
-
-		mysqli_close($conn);
-		sendResponse($response);
-	}
+    sendResponse($response);
 } else {
-	$response['status'] = 'error';
-	$response['message'] = "Please try again.";
-	sendResponse($response);
+    $response['status'] = 'error';
+    $response['message'] = "Please provide valid data.";
+    sendResponse($response);
 }
 
+// Send JSON response
 function sendResponse($response) {
-	header('Content-Type: application/json');
-	echo json_encode($response);
-	exit();
+    header('Content-Type: application/json');
+    echo json_encode($response);
+    exit();
 }
-
-// Sanitize user input to prevent SQL injection
-function sanitize_input($data, $conn) {
-	$data = trim($data);
-	$data = stripslashes($data);
-	$data = htmlspecialchars($data);
-	return mysqli_real_escape_string($conn, $data);
-}
-?>
