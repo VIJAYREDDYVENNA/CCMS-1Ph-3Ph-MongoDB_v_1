@@ -13,7 +13,7 @@ $user_db_conn = $client->ccms_user_db;  // Assuming this is the MongoDB connecti
 
 // Check if client-id and client-name are set
 if (isset($_POST['client-id']) && isset($_POST['client-name'])) {
-    $client_id = sanitize_input($_POST['client-id']);
+    $client_id = strtolower( sanitize_input($_POST['client-id']));
     $client_name = sanitize_input($_POST['client-name']);
 
     // Check if client_id and client_name are empty
