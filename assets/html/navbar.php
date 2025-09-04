@@ -23,7 +23,11 @@
           <li><a class="dropdown-item" href="#">View All Notifications</a></li>
         </ul>
       </div> -->
-
+<div>
+ <?php
+  include("theme-selection.php")
+ ?>
+</div>
       <div class="dropdown">
 
         <a href="#" class="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle " data-bs-toggle="dropdown" aria-expanded="false">
