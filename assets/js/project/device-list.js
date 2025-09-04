@@ -21,7 +21,7 @@ group_list.addEventListener('change', function () {
  
     if (group_name !== "" && group_name !== null) {
         $("#pre-loader").css('display', 'block');
-        add_device_list(group_name,1, itemsPerPage);
+        add_device_list(group_name, 1, itemsPerPage);
 
     }
 });
@@ -247,7 +247,8 @@ document.getElementById('editDeviceModal').addEventListener('hidden.bs.modal', f
 
 // Function to update the device name
 function updateDeviceName() {
-    var deviceId = document.getElementById('deviceId').value;
+   if(confirm("Are you sure you want to update ?")){
+     var deviceId = document.getElementById('deviceId').value;
     var newDeviceName = document.getElementById('newdeviceName').value;
     var messageBox = document.getElementById('messageBox');
     if (newDeviceName == "") {
@@ -309,6 +310,7 @@ function updateDeviceName() {
             }
         });
     }
+   }
 
     // DO NOT close the modal. The user will manually close it after reviewing the message.
 }
@@ -539,8 +541,13 @@ function addLight() {
                         });
                         var addLightModal = bootstrap.Modal.getInstance(document.getElementById('addLightModal'));
                         addLightModal.hide();
-                        
-                        add_device_list(group_name,parseInt(pageNumber), itemsPerPage);
+                              let aePage = document.querySelector("#pagination li.active a")?.textContent.trim();
+
+                          let itemsPage = document.getElementById('items-per-page').value;
+                        //   aePage=parseInt(aePage);
+                        //   itemsPage=parseInt(itemsPage);
+                        // console.log(aePage+" "+itemsPage);
+                        add_device_list(group_name, parseInt(aePage), parseInt(itemsPage));
                         openLightsModal(device_id, device_name);
 
                     } else {
@@ -614,7 +621,13 @@ function remove_Lights(element, device_id, _id,totalLights,totalWattage) {
                         backdrops.forEach(function (backdrop) {
                             backdrop.parentNode.removeChild(backdrop);
                         });
-                        add_device_list(group_name, pageNumber, itemsPerPage);
+                               let aePage = document.querySelector("#pagination li.active a")?.textContent.trim();
+
+                          let itemsPage = document.getElementById('items-per-page').value;
+                        //   aePage=parseInt(aePage);
+                        //   itemsPage=parseInt(itemsPage);
+                        // console.log(aePage+" "+itemsPage);
+                        add_device_list(group_name, parseInt(aePage), parseInt(itemsPage));
                         openLightsModal(device_id, device_name);
                     } else {
                         alert(response.message);
