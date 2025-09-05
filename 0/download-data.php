@@ -37,11 +37,11 @@ SessionManager::checkSession();
                                 <div class="pb-2">
                                     <label for="select-group" class="form-label">Group:</label>
                                     <?php
-                                    include(BASE_PATH . "dropdown-selection/group_selection.php");
+                                    include(BASE_PATH . "dropdown-selection/group_selection.php");//Group ID (Example:-Khammam,Nandyal etc..)
                                     ?>
                                     <label for="select-device" class="form-label mt-2">Device:</label>
                                     <?php
-                                    include(BASE_PATH . "dropdown-selection/device_selection.php");
+                                    include(BASE_PATH . "dropdown-selection/device_selection.php");//Device ID (Example :- CCMS_01,MCMS_01 ect..)
                                     ?>
 
                                     <label for="select-group" class="form-label mt-2">Select Dates:</label>

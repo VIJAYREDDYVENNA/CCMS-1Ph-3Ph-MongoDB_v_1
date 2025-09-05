@@ -22,101 +22,85 @@ $send = array();
 $send = "";
 $user_devices = "";
 
+// use MongoDB collection
+$complaintsHistory = $devices_db_conn->complaints_history;
+
 //////////////////////////////////////////////////////////
 
-if ($_SERVER["REQUEST_METHOD"] == "POST" )
-{
-	$complaint_id = isset($_POST['ID']) ? $_POST['ID'] : $_SESSION['complaint_id'];      // Sanitize ID input
-	$send = array();
-	$send = "";
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $complaint_id = isset($_POST['ID']) ? $_POST['ID'] : $_SESSION['complaint_id'];
 
-	$sts_1 = "";
-	$sts_2 = "";
-	$sts_3 = "";
+    $sts_1 = "";
+    $sts_2 = "";
+    $sts_3 = "";
 
-	$conn = mysqli_connect(HOST, USERNAME, PASSWORD, DB_ALL);
-	if (!$conn) {
-		die("Connection failed: " . mysqli_connect_error());
-	} else {
+    // Sanitize complaint_id
+    $complaint_id = htmlspecialchars(trim($complaint_id));
 
-    	// Sanitize complaint_id for SQL
-		$complaint_id = sanitize_input($complaint_id, $conn);
+    $limit = 100;
+    $offset = 0;
 
-		$limit=100;
-		$offset=0;
+    if (isset($_POST['FETCH_MORE']) && $_POST['FETCH_MORE'] === "MORE") {
+        if ($_SESSION['FETCH_TRACK'] == 0 || $_SESSION['complaint_id'] == "") {
+            exit();
+        }
+        $page = $_SESSION['FETCH_TRACK'];
 
-		if(isset($_POST['FETCH_MORE'])&&$_POST['FETCH_MORE']==="MORE")
-		{
-			if($_SESSION['FETCH_TRACK']==0||$_SESSION['complaint_id']=="")
-			{
-				exit();
-			}
-			$page= $_SESSION['FETCH_TRACK'];
+        $page = $page ? intval($page) : 1;
+        $limit = $limit ? intval($limit) : 1;
+        $offset = ($page - 1) * $limit;
 
-			$page = $page ? intval($page) : 1;
-			$limit = $limit ? intval($limit) : 1;
-			$offset = ($page - 1) * $limit;
+        $_SESSION['FETCH_TRACK'] = $_SESSION['FETCH_TRACK'] + 1;
+    } else {
+        $_SESSION['FETCH_TRACK'] = 2;
+        $_SESSION['complaint_id'] = $complaint_id;
+    }
 
-			$_SESSION['FETCH_TRACK']=$_SESSION['FETCH_TRACK']+1;
-		}
-		else
-		{
-			$_SESSION['FETCH_TRACK']=2;
-			$_SESSION['complaint_id']=$complaint_id;
+    try {
+        // MongoDB query with filter, sort, limit, and skip
+        $cursor = $complaintsHistory->find(
+            ['complaint_no' => $complaint_id],
+            [
+                'sort' => ['id' => -1],
+                'limit' => $limit,
+                'skip'  => $offset
+            ]
+        );
 
-		}
+        $results = iterator_to_array($cursor);
 
-		$sql = "SELECT * FROM `complaints_history` WHERE complaint_no = ? ORDER BY id DESC LIMIT $limit OFFSET $offset";
-		$stmt = mysqli_prepare($conn, $sql);
-		mysqli_stmt_bind_param($stmt, "s", $complaint_id);
+        if (count($results) > 0) {
+            foreach ($results as $r) {
+                $r['updated_time'] = date("H:i:s d-m-Y", strtotime($r['updated_time']));
 
-		if (mysqli_stmt_execute($stmt)) {
-			$result = mysqli_stmt_get_result($stmt);
-
-			if (mysqli_num_rows($result) > 0) {
-				while ($r = mysqli_fetch_assoc($result)) {
-					$r['updated_time'] = date("H:i:s d-m-Y", strtotime($r['updated_time']));
-
-					$sts_1 = htmlspecialchars($r['complaint_update']);  
-					$sts_2 = htmlspecialchars($r['updated_time']);      
-					$sts_3 = htmlspecialchars($r['updated_by']);        
-
-					?>
-					<tr>
-						<td class="body-cell col2"><?php echo $sts_1; ?></td>
-						<td class="body-cell col2"><?php echo $sts_3; ?></td>
-						<td class="body-cell col2"><?php echo $sts_2; ?></td>
-					</tr>
-					<?php
-				}
-			} else {
-				$_SESSION['FETCH_TRACK']=0;
-				?>
-				<tr>
-					<td class="body-cell col1 text-left text-danger" colspan="5">Records are not Found</td>
-				</tr>
-				<?php
-			}
-		} else {
-			$_SESSION['FETCH_TRACK']=0;
-			?>
-			<tr>
-				<td class="body-cell col1 text-left text-danger" colspan="5">Records are not Found</td>
-			</tr>
-			<?php
-		}
-
-		mysqli_stmt_close($stmt);
-		mysqli_close($conn);
-	}
+                $sts_1 = htmlspecialchars($r['complaint_update']);
+                $sts_2 = htmlspecialchars($r['updated_time']);
+                $sts_3 = htmlspecialchars($r['updated_by']);
+                ?>
+                <tr>
+                    <td class="body-cell col2"><?php echo $sts_1; ?></td>
+                    <td class="body-cell col2"><?php echo $sts_3; ?></td>
+                    <td class="body-cell col2"><?php echo $sts_2; ?></td>
+                </tr>
+                <?php
+            }
+        } else {
+            $_SESSION['FETCH_TRACK'] = 0;
+            ?>
+            <tr>
+                <td class="body-cell col1 text-left text-danger" colspan="5">Records are not Found</td>
+            </tr>
+            <?php
+        }
+    } catch (Exception $e) {
+        $_SESSION['FETCH_TRACK'] = 0;
+        ?>
+        <tr>
+            <td class="body-cell col1 text-left text-danger" colspan="5">
+                Error: <?php echo $e->getMessage(); ?>
+            </td>
+        </tr>
+        <?php
+    }
 }
-
-// Function to sanitize input data
-function sanitize_input($data, $conn) {
-	$data = trim($data);
-	$data = stripslashes($data);
-	$data = htmlspecialchars($data);
-	return mysqli_real_escape_string($conn, $data);
-}
-
 ?>
