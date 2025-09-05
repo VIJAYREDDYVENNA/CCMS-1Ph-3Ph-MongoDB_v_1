@@ -45,11 +45,14 @@ view_all.addEventListener('change', function() {
 	if (this.checked) {		
 		document.getElementById('pre-loader').style.display = 'block';
 		update_all_group_data_table();
-		
+		$('#btn_add_more').hide();
+		$('#pageSelection-div').show();
 	} else {
 		let device_id = document.getElementById('device_id').value;
 		update_data_table(device_id, "LATEST", "");
 		document.getElementById('pre-loader').style.display = 'block';
+		$('#btn_add_more').show();
+		$('#pageSelection-div').hide();
 	}
 });
 
@@ -188,35 +191,332 @@ function update_data_table(device_id, records, searched_date ){
 		}
 	});
 }
+// let recordsPerPage = 20;
+// document.getElementById('items-per-page').addEventListener('change', function () {
+//     recordsPerPage = document.getElementById('items-per-page').value;
+//     console.log(recordsPerPage);
+// 	update_all_group_data_table();
+// });
 
-function update_all_group_data_table(){
+// function update_all_group_data_table() {
+//     $.ajax({
+//         type: "POST",
+//         url: '../data-report/code/all-group-data.php',
+//         traditional: true,
+//         dataType: "json",
+//         data: {
+//             recordsPerPage: recordsPerPage // Sending the recordsPerPage value to the backend
+//         },
+//         success: function(response) {
+//             console.log(response);
+//             $("#pre-loader").css('display', 'none');
+//             $("#frame_data_table_header").html("");
 
-	$.ajax({
-		type: "POST",
-		url: '../data-report/code/all-group-data.php',
-		traditional: true,		
-		dataType: "json",
-		success: function(response) {
-			$("#pre-loader").css('display', 'none');
-			$("#frame_data_table_header").html("");
-				console.log(response[1]);
-			 if(response[1]=="1PH"){
-				
-				$("#frame_data_table_header").html('<tr class="header-row-1"> <th class="table-header-row-1"></th> <th class="table-header-row-1 col-size-1" >Updated at</th> <th class="table-header-row-1">ON/OFF Status</th> <th class="table-header-row-1">Load</th> <th class="table-header-row-1" colspan="1">Voltages (Volts)</th> <th class="table-header-row-1" colspan="1">Currents (Amps)</th> <th class="table-header-row-1" colspan="1">kW</th> <th class="table-header-row-1" colspan="1">kVA</th> <th class="table-header-row-1" colspan="2">Energy (Units)</th> <th class="table-header-row-1" colspan="1">Power Factor</th> <th class="table-header-row-1" colspan="1">Frequency (Hz)</th> <th class="table-header-row-1">Battery</th> <th class="table-header-row-1">Signal Level</th><th class="table-header-row-1">Location</th> </tr> <tr class="header-row-2"> <th class="table-header-row-2">Device Id</th> <th class="table-header-row-2"></th> <th class="table-header-row-2"></th> <th class="table-header-row-2">Status</th> <th class="table-header-row-2"></th> <th class="table-header-row-2"></th> <th class="table-header-row-2">Total</th> <th class="table-header-row-2">Total</th> <th class="table-header-row-2">kWh</th> <th class="table-header-row-2">kVAh</th> <th class="table-header-row-2"></th> <th class="table-header-row-2"></th> <th class="table-header-row-2">Voltage(mV)</th> <th class="table-header-row-2"></th>  <th class="table-header-row-2"></th> </tr>');
-			}
-			else{
+//             // Display row count in the console or somewhere in the UI
+//             // console.log("Total Rows: " + response.rowCount);
 
-				$("#frame_data_table_header").html('<tr class="header-row-1"> <th class="table-header-row-1"></th> <th class="table-header-row-1 col-size-1" >Updated at</th> <th class="table-header-row-1">ON/OFF Status</th> <th class="table-header-row-1">Load</th> <th class="table-header-row-1" colspan="3">Phase Voltages (Volts)</th> <th class="table-header-row-1" colspan="3">Phase Currents (Amps)</th> <th class="table-header-row-1" colspan="4">KW</th> <th class="table-header-row-1" colspan="4">KVA</th> <th class="table-header-row-1" colspan="2">Energy (Units)</th> <th class="table-header-row-1" colspan="3">Power Factor</th> <th class="table-header-row-1" colspan="3">Frequency (Hz)</th> <th class="table-header-row-1">Battery</th><th class="table-header-row-1">Signal Level</th> <th class="table-header-row-1">Location</th> </tr> <tr class="header-row-2"> <th class="table-header-row-2">Device Id</th> <th class="table-header-row-2 col-size-1"></th> <th class="table-header-row-2 col-size-1"></th> <th class="table-header-row-2">Status</th> <th class="table-header-row-2">R/Single Phase</th> <th class="table-header-row-2">Y</th> <th class="table-header-row-2">B</th> <th class="table-header-row-2">R/Single Phase</th> <th class="table-header-row-2">Y</th> <th class="table-header-row-2">B</th> <th class="table-header-row-2">R/Single Phase</th> <th class="table-header-row-2">Y</th> <th class="table-header-row-2">B</th> <th class="table-header-row-2">Total</th> <th class="table-header-row-2">R/Single Phase</th> <th class="table-header-row-2">Y</th> <th class="table-header-row-2">B</th> <th class="table-header-row-2">Total</th> <th class="table-header-row-2">kWh</th> <th class="table-header-row-2">kVAh</th> <th class="table-header-row-2">R/Single Phase</th> <th class="table-header-row-2">Y</th> <th class="table-header-row-2">B</th> <th class="table-header-row-2">R/Single Phase</th> <th class="table-header-row-2">Y</th> <th class="table-header-row-2">B</th> <th class="table-header-row-2">Voltage(mV)</th> <th class="table-header-row-2"></th>  <th class="table-header-row-2"></th> </tr>');
-			}
-			
-			$("#frame_data_table").html("");
-			$("#frame_data_table").html(response[0]);
+//             // Check the selected phase and update table headers accordingly
+//             if (response.selected_phase == "1PH") {
+//                 $("#frame_data_table_header").html(`
+//                     <tr class="header-row-1">
+//                         <th class="table-header-row-1"></th>
+//                         <th class="table-header-row-1 col-size-1">Updated at</th>
+//                         <th class="table-header-row-1">ON/OFF Status</th>
+//                         <th class="table-header-row-1">Load</th>
+//                         <th class="table-header-row-1" colspan="1">Voltages (Volts)</th>
+//                         <th class="table-header-row-1" colspan="1">Currents (Amps)</th>
+//                         <th class="table-header-row-1" colspan="1">kW</th>
+//                         <th class="table-header-row-1" colspan="1">kVA</th>
+//                         <th class="table-header-row-1" colspan="2">Energy (Units)</th>
+//                         <th class="table-header-row-1" colspan="1">Power Factor</th>
+//                         <th class="table-header-row-1" colspan="1">Frequency (Hz)</th>
+//                         <th class="table-header-row-1">Battery</th>
+//                         <th class="table-header-row-1">Signal Level</th>
+//                         <th class="table-header-row-1">Location</th>
+//                     </tr>
+//                     <tr class="header-row-2">
+//                         <th class="table-header-row-2">Device Id</th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2">Status</th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2">Total</th>
+//                         <th class="table-header-row-2">Total</th>
+//                         <th class="table-header-row-2">kWh</th>
+//                         <th class="table-header-row-2">kVAh</th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2">Voltage(mV)</th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2"></th>
+//                     </tr>
+//                 `);
+//             } else {
+//                 $("#frame_data_table_header").html(`
+//                     <tr class="header-row-1">
+//                         <th class="table-header-row-1"></th>
+//                         <th class="table-header-row-1 col-size-1">Updated at</th>
+//                         <th class="table-header-row-1">ON/OFF Status</th>
+//                         <th class="table-header-row-1">Load</th>
+//                         <th class="table-header-row-1" colspan="3">Phase Voltages (Volts)</th>
+//                         <th class="table-header-row-1" colspan="3">Phase Currents (Amps)</th>
+//                         <th class="table-header-row-1" colspan="4">KW</th>
+//                         <th class="table-header-row-1" colspan="4">KVA</th>
+//                         <th class="table-header-row-1" colspan="2">Energy (Units)</th>
+//                         <th class="table-header-row-1" colspan="3">Power Factor</th>
+//                         <th class="table-header-row-1" colspan="3">Frequency (Hz)</th>
+//                         <th class="table-header-row-1">Battery</th>
+//                         <th class="table-header-row-1">Signal Level</th>
+//                         <th class="table-header-row-1">Location</th>
+//                     </tr>
+//                     <tr class="header-row-2">
+//                         <th class="table-header-row-2">Device Id</th>
+//                         <th class="table-header-row-2 col-size-1"></th>
+//                         <th class="table-header-row-2 col-size-1"></th>
+//                         <th class="table-header-row-2">Status</th>
+//                         <th class="table-header-row-2">R/Single Phase</th>
+//                         <th class="table-header-row-2">Y</th>
+//                         <th class="table-header-row-2">B</th>
+//                         <th class="table-header-row-2">R/Single Phase</th>
+//                         <th class="table-header-row-2">Y</th>
+//                         <th class="table-header-row-2">B</th>
+//                         <th class="table-header-row-2">R/Single Phase</th>
+//                         <th class="table-header-row-2">Y</th>
+//                         <th class="table-header-row-2">B</th>
+//                         <th class="table-header-row-2">Total</th>
+//                         <th class="table-header-row-2">R/Single Phase</th>
+//                         <th class="table-header-row-2">Y</th>
+//                         <th class="table-header-row-2">B</th>
+//                         <th class="table-header-row-2">Total</th>
+//                         <th class="table-header-row-2">kWh</th>
+//                         <th class="table-header-row-2">kVAh</th>
+//                         <th class="table-header-row-2">R/Single Phase</th>
+//                         <th class="table-header-row-2">Y</th>
+//                         <th class="table-header-row-2">B</th>
+//                         <th class="table-header-row-2">R/Single Phase</th>
+//                         <th class="table-header-row-2">Y</th>
+//                         <th class="table-header-row-2">B</th>
+//                         <th class="table-header-row-2">Voltage(mV)</th>
+//                         <th class="table-header-row-2"></th>
+//                         <th class="table-header-row-2"></th>
+//                     </tr>
+//                 `);
+//             }
 
-		},
-		error: function(jqXHR, textStatus, errorThrown) {
-			$("#pre-loader").css('display', 'none');
-			error_message_text.textContent="Error getting the data";
-			error_toast.show();
-		}
-	});
+//             // Render the table rows (frame data) dynamically
+//             $("#frame_data_table").html(response.data);
+
+//             // Optionally, display the row count in your UI (e.g., as a label or status bar)
+//             $("#row-count").text("Total Rows: " + response.rowCount);
+//         },
+//         error: function(jqXHR, textStatus, errorThrown) {
+//             $("#pre-loader").css('display', 'none');
+//             error_message_text.textContent = "Error getting the data";
+//             error_toast.show();
+//         }
+//     });
+// }
+
+let recordsPerPage = 20;
+let currentPage = 1;
+
+document.getElementById('items-per-page').addEventListener('change', function () {
+    recordsPerPage = document.getElementById('items-per-page').value;
+    currentPage = 1; // Reset to the first page whenever records per page changes
+    update_all_group_data_table();
+});
+
+function update_all_group_data_table() {
+    $.ajax({
+        type: "POST",
+        url: '../data-report/code/all-group-data.php',
+        traditional: true,
+        dataType: "json",
+        data: {
+            recordsPerPage: recordsPerPage,
+            pageNumber: currentPage // Send current page to backend
+        },
+        success: function(response) {
+            console.log(response);
+            $("#pre-loader").css('display', 'none');
+            $("#frame_data_table_header").html("");
+
+            // Update table headers and rows based on the selected phase
+          if (response.selected_phase == "1PH") {
+                $("#frame_data_table_header").html(`
+                    <tr class="header-row-1">
+                        <th class="table-header-row-1"></th>
+                        <th class="table-header-row-1 col-size-1">Updated at</th>
+                        <th class="table-header-row-1">ON/OFF Status</th>
+                        <th class="table-header-row-1">Load</th>
+                        <th class="table-header-row-1" colspan="1">Voltages (Volts)</th>
+                        <th class="table-header-row-1" colspan="1">Currents (Amps)</th>
+                        <th class="table-header-row-1" colspan="1">kW</th>
+                        <th class="table-header-row-1" colspan="1">kVA</th>
+                        <th class="table-header-row-1" colspan="2">Energy (Units)</th>
+                        <th class="table-header-row-1" colspan="1">Power Factor</th>
+                        <th class="table-header-row-1" colspan="1">Frequency (Hz)</th>
+                        <th class="table-header-row-1">Battery</th>
+                        <th class="table-header-row-1">Signal Level</th>
+                        <th class="table-header-row-1">Location</th>
+                    </tr>
+                    <tr class="header-row-2">
+                        <th class="table-header-row-2">Device Id</th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2">Status</th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2">Total</th>
+                        <th class="table-header-row-2">Total</th>
+                        <th class="table-header-row-2">kWh</th>
+                        <th class="table-header-row-2">kVAh</th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2">Voltage(mV)</th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2"></th>
+                    </tr>
+                `);
+            } else {
+                $("#frame_data_table_header").html(`
+                    <tr class="header-row-1">
+                        <th class="table-header-row-1"></th>
+                        <th class="table-header-row-1 col-size-1">Updated at</th>
+                        <th class="table-header-row-1">ON/OFF Status</th>
+                        <th class="table-header-row-1">Load</th>
+                        <th class="table-header-row-1" colspan="3">Phase Voltages (Volts)</th>
+                        <th class="table-header-row-1" colspan="3">Phase Currents (Amps)</th>
+                        <th class="table-header-row-1" colspan="4">KW</th>
+                        <th class="table-header-row-1" colspan="4">KVA</th>
+                        <th class="table-header-row-1" colspan="2">Energy (Units)</th>
+                        <th class="table-header-row-1" colspan="3">Power Factor</th>
+                        <th class="table-header-row-1" colspan="3">Frequency (Hz)</th>
+                        <th class="table-header-row-1">Battery</th>
+                        <th class="table-header-row-1">Signal Level</th>
+                        <th class="table-header-row-1">Location</th>
+                    </tr>
+                    <tr class="header-row-2">
+                        <th class="table-header-row-2">Device Id</th>
+                        <th class="table-header-row-2 col-size-1"></th>
+                        <th class="table-header-row-2 col-size-1"></th>
+                        <th class="table-header-row-2">Status</th>
+                        <th class="table-header-row-2">R/Single Phase</th>
+                        <th class="table-header-row-2">Y</th>
+                        <th class="table-header-row-2">B</th>
+                        <th class="table-header-row-2">R/Single Phase</th>
+                        <th class="table-header-row-2">Y</th>
+                        <th class="table-header-row-2">B</th>
+                        <th class="table-header-row-2">R/Single Phase</th>
+                        <th class="table-header-row-2">Y</th>
+                        <th class="table-header-row-2">B</th>
+                        <th class="table-header-row-2">Total</th>
+                        <th class="table-header-row-2">R/Single Phase</th>
+                        <th class="table-header-row-2">Y</th>
+                        <th class="table-header-row-2">B</th>
+                        <th class="table-header-row-2">Total</th>
+                        <th class="table-header-row-2">kWh</th>
+                        <th class="table-header-row-2">kVAh</th>
+                        <th class="table-header-row-2">R/Single Phase</th>
+                        <th class="table-header-row-2">Y</th>
+                        <th class="table-header-row-2">B</th>
+                        <th class="table-header-row-2">R/Single Phase</th>
+                        <th class="table-header-row-2">Y</th>
+                        <th class="table-header-row-2">B</th>
+                        <th class="table-header-row-2">Voltage(mV)</th>
+                        <th class="table-header-row-2"></th>
+                        <th class="table-header-row-2"></th>
+                    </tr>
+                `);
+            }
+
+            // Render the table rows (frame data) dynamically
+            $("#frame_data_table").html(response.data);
+
+            // Display row count
+            $("#row-count").text("Total Rows: " + response.rowCount);
+
+            // Create pagination controls dynamically
+			$("#pagination-controls").empty();
+
+            pagination_fun($("#pagination-controls"), response.totalPages, currentPage);
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            $("#pre-loader").css('display', 'none');
+            error_message_text.textContent = "Error getting the data";
+            error_toast.show();
+        }
+    });
+}
+
+// Function to handle pagination controls
+function pagination_fun(pagination, totalPages, page) {
+    page = Number(page);
+
+    const maxPagesToShow = 5;
+    const windowSize = Math.floor(maxPagesToShow / 2);
+    let startPage = Math.max(1, page - windowSize);
+    let endPage = Math.min(totalPages, page + windowSize);
+
+    if (page - windowSize < 1) {
+        endPage = Math.min(totalPages, endPage + (windowSize - (page - 1)));
+    }
+
+    if (page + windowSize > totalPages) {
+        startPage = Math.max(1, startPage - (page + windowSize - totalPages));
+    }
+
+    // Add "First" button
+    if (page > 1) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="1">First</a>
+            </li>
+        `);
+    }
+
+    // Add "Previous" button
+    if (page > 1) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
+            </li>
+        `);
+    }
+
+    // Add page number buttons
+    for (let i = startPage; i <= endPage; i++) {
+        pagination.append(`
+            <li class="page-item ${i === page ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
+        `);
+    }
+
+    // Add "Next" button
+    if (page < totalPages) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page + 1}">Next</a>
+            </li>
+        `);
+    }
+
+    // Add "Last" button
+    if (page < totalPages) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${totalPages}">Last</a>
+            </li>
+        `);
+    }
+
+    // Bind the page navigation events
+    pagination.find('a').on('click', function (e) {
+        e.preventDefault();
+        const pageNumber = $(this).data('page');
+        currentPage = pageNumber;
+        update_all_group_data_table();
+    });
 }
