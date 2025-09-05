@@ -39,7 +39,7 @@ $load=80;
 
 //$sql_set_parma="SELECT  `l_r`,`l_y`,`l_b`,`u_r`,`u_y`,`u_b`,`i_r`,`i_y`,`i_b`,`pf` FROM `$central_db`.`thresholds` WHERE device_id='$device_id'";
 $params_collection = $devices_db_conn->thresholds ?? null;
-
+/*
 if ($params_collection) {
 	$params_doc = $params_collection->findOne(['device_id' => $device_id]);
 
@@ -62,7 +62,7 @@ if ($params_collection) {
 
         $pf2 = round((1 - ($pf1 ?? 0) + 1) - 2, 3); // Adjust $pf1 initialization accordingly
     } 
-} 
+} */
 
 $v_max_lr=$v_max_r - $v_max_r*(0.04);
 $v_max_ly=$v_max_y - $v_max_y*(0.04);
