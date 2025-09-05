@@ -38,8 +38,8 @@ $pf2=-0.85;
 $load=80;
 
 //$sql_set_parma="SELECT  `l_r`,`l_y`,`l_b`,`u_r`,`u_y`,`u_b`,`i_r`,`i_y`,`i_b`,`pf` FROM `$central_db`.`thresholds` WHERE device_id='$device_id'";
-/*$params_collection = $devices_db_conn->thresholds ?? null;
-
+$params_collection = $devices_db_conn->thresholds ?? null;
+/*
 if ($params_collection) {
 	$params_doc = $params_collection->findOne(['device_id' => $device_id]);
 
