@@ -27,9 +27,8 @@ if (isset($r['date_time'])) {
 } else {
 	$r['date_time'] = null;
 }
+$f1 = (!empty(trim($r['device_id'] ?? ""))) ? $r['device_id'] : "--";
 
-
-$f1 = $r['device_id']        ?? "--";
 $f2 = $r['date_time']        ?? "--";
 $f3 = $r['voltage_ph1']      ?? "--";
 $f4 = $r['voltage_ph2']      ?? "--";
@@ -178,7 +177,6 @@ if($phase=="3PH")
 	<td > $ff2  </td>
 	<td >";
 }
-
 else if($phase=="1PH" && $selected_phase =="1PH" && $selection =="ALL")
 {
 	$data.= "<tr >
@@ -274,4 +272,6 @@ else
 } 
 
 $data.= "</td></tr>";
+
+
 ?>
