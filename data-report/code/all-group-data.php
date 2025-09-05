@@ -13,11 +13,12 @@ $user_name = $sessionVars['user_name'];
 $user_email = $sessionVars['user_email'];
 $permission_check = 0;
 
- $selection="ALL";
+$selection="ALL";
 
 $d_name = "";
 $data = "";
 $phase = "3PH";
+$selected_phase ;
 $count = 0;
 $device_list = json_decode($_SESSION["DEVICES_LIST"]);
 $selected_phase1 ="3PH";
@@ -45,6 +46,7 @@ $collection = $devices_db_conn->live_data_updates;
     // Distinct phases among devices
 $phases = $collection->distinct('phase', ['device_id' => ['$in' => $device_ids_array]]);
 
+
 if (count($phases) == 2) {
 	$phase_row = "ALL";
 	$selected_phase1 = "ALL";
@@ -69,13 +71,33 @@ $device_ids = array_column($device_list, 'D_ID');
 foreach ($cursor as $r) {
 	$index = array_search($r['device_id'], $device_ids);
 	if ($index !== false) {
-		if ($phase_row == "1PH") {
+
+
+
+		if ($phase_row== "1PH") {
+			$phase="1PH";
+			$selection = "1PH";
+			$selected_phase = "1PH";
+		} else {
+			$phase = $r['phase'];
+
+			$selection = "ALL";
+			$selected_phase = $_SESSION["SELECTED_PHASE"];
+		}
+
+
+
+		
+		/*if ($phase_row == "1PH") {
 			$phase = "1PH";
 			$selected_phase = "1PH";
 		} else {
+			$selection = "ALL";
 			$phase = $r['phase'] ?? "ALL";
 			$selected_phase = $_SESSION["SELECTED_PHASE"] ?? "ALL";
-		}
+		}*/
+
+		
 
 		$device_id = strtoupper($device_list[$index]->D_ID);
 		$d_name = " (" . ($device_list[$index]->D_NAME ?? '') . ")";
@@ -95,4 +117,7 @@ $selected_phase = $selected_phase1;
 
 
 
+
 echo json_encode(array($data, $selected_phase));
+
+?>

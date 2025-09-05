@@ -18,6 +18,7 @@ $data = "";
 $selection = "";
 $phase = "3PH";
 
+
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['D_ID']) && isset($_POST['RECORDS'])) {
 	$device_ids = filter_input(INPUT_POST, 'D_ID', FILTER_SANITIZE_STRING);
 	$records = filter_input(INPUT_POST, 'RECORDS', FILTER_SANITIZE_STRING);
@@ -30,9 +31,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['D_ID']) && isset($_PO
 	$send = "";
 	$id = $device_ids;
 	$device_id = $id;
+	$selected_phase1 ="";
+
 
 	include_once("../../common-files/fetch-device-phase.php");
 	$phase = $device_phase;
+	$selected_phase1 =$phase;
 
 	try {
 		$collection = $devices_db_conn->live_data;
@@ -146,31 +150,31 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['D_ID']) && isset($_PO
 			$cursor = $collection->find($filter, $options);
 		//}
 
-		
-
-		$docs = iterator_to_array($cursor);
 
 
+			$docs = iterator_to_array($cursor);
 
-		if (empty($docs)) {
-			$data = '<tr><td class="text-danger" colspan="75">Records not found</td></tr>';
-		} 
-		else 
-		{
-			foreach ($docs as $r) {
+
+
+			if (empty($docs)) {
+				$data = '<tr><td class="text-danger" colspan="75">Records not found</td></tr>';
+			} 
+			else 
+			{
+				foreach ($docs as $r) {
                 // Use uppercase db name for device id display
-				$device_id = strtoupper($db);
+					$device_id = strtoupper($db);
 
-				include("table_cells.php");
+					include("table_cells.php");
+				}
 			}
+		} catch (Exception $e) {
+			$data = '<tr><td class="text-danger" colspan="75">Error: ' . htmlspecialchars($e->getMessage()) . '</td></tr>';
 		}
-	} catch (Exception $e) {
-		$data = '<tr><td class="text-danger" colspan="75">Error: ' . htmlspecialchars($e->getMessage()) . '</td></tr>';
+	} else {
+		$data = '<tr><td class="text-danger" colspan="75">Invalid request parameters</td></tr>';
 	}
-} else {
-	$data = '<tr><td class="text-danger" colspan="75">Invalid request parameters</td></tr>';
-}
 
 // Return JSON encoded data and phase
-echo json_encode(array($data, $phase));
-?>
+	echo json_encode(array($data, $phase));
+	?>
