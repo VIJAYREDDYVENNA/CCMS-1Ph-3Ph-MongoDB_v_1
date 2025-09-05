@@ -13,13 +13,7 @@ $user_name = $sessionVars['user_name'];
 $user_email = $sessionVars['user_email'];
 $permission_check = 0;
 $phase="";
-// if ($_SERVER['REQUEST_METHOD'] == 'GET')  // Now checking for GET request
-// {
-//     $id = filter_input(INPUT_GET, 'D_ID', FILTER_SANITIZE_STRING); 
-//     include_once("../../common-files/fetch-device-phase.php");
-//     $phase= $device_phase;
-//     echo json_encode( $phase);
-// }
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST')
 {
     $type = filter_input(INPUT_POST, 'TYPE', FILTER_SANITIZE_STRING); 
@@ -28,13 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
     include_once("../../common-files/fetch-device-phase.php");
     $phase= $device_phase;
 
-    $conn = mysqli_connect(HOST, USERNAME, PASSWORD, DB_ALL);
-    if (!$conn) {
-        die("Connection failed: " . mysqli_connect_error());
-        exit();
-    }
-    $type = sanitize_input($type, $conn);
-    $id = sanitize_input($id, $conn);
+    // MongoDB connection (assuming $devices_db_conn is your MongoDB connection)
+    $collection = $devices_db_conn->lighthours_bar;
+
+    $type = sanitize_input($type);
+    $id = sanitize_input($id);
 
     switch ($type) {
         case 'LAST_WEEK':
@@ -60,61 +52,113 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
         break;
 
         case 'CUSTOMRANGE':
-
         $start_date = $_POST['STARTDATE'];
         $end_date = $_POST['ENDDATE'];
        
-        $start_date = sanitize_input($start_date, $conn);
-        $end_date = sanitize_input($end_date, $conn);
+        $start_date = sanitize_input($start_date);
+        $end_date = sanitize_input($end_date);
         break;
         default:
         echo json_encode([]);
         exit();
     }
 
-    $stmt = "";
-    if($type==="LATEST")
-    {
-        //$query = "SELECT `date` AS day,`r_up` AS glowing_hours_phaseR,  `r_down` AS non_glowing_hours_phaseR, `y_up` AS glowing_hours_phaseY,`y_down` AS non_glowing_hours_phaseY, `b_up` AS glowing_hours_phaseB, `b_down` AS non_glowing_hours_phaseB, `total_active_time` AS TotalActiveHours, `total_inactive_hours` AS TotalInActiveHours FROM lighthours_bar  WHERE device_id = ? ORDER BY id LIMIT 10";
-		$query = "SELECT date AS day, r_up AS glowing_hours_phaseR,  r_down AS non_glowing_hours_phaseR, y_up AS glowing_hours_phaseY, y_down AS non_glowing_hours_phaseY, b_up AS glowing_hours_phaseB, b_down AS non_glowing_hours_phaseB, total_active_time AS TotalActiveHours, total_inactive_hours AS TotalInActiveHours FROM (SELECT * FROM lighthours_bar  WHERE device_id = ? ORDER BY id  DESC LIMIT 10) AS tbl ORDER BY id ASC";
-        $stmt = mysqli_prepare($conn, $query);
-        mysqli_stmt_bind_param($stmt, "s", $id);
-    }
-    else
-    {
-        $query = "SELECT `date` AS day,`r_up` AS glowing_hours_phaseR,  `r_down` AS non_glowing_hours_phaseR, `y_up` AS glowing_hours_phaseY, 
-        `y_down` AS non_glowing_hours_phaseY, `b_up` AS glowing_hours_phaseB, `b_down` AS non_glowing_hours_phaseB, `total_active_time` AS TotalActiveHours, `total_inactive_hours` AS TotalInActiveHours FROM lighthours_bar  WHERE device_id = ? AND `date` BETWEEN ? AND ?";
-
-        $stmt = mysqli_prepare($conn, $query);
-        mysqli_stmt_bind_param($stmt, "sss", $id, $start_date, $end_date);
-    }
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
     $data = [];
-    while ($row = mysqli_fetch_assoc($result)) {
-
-        $row['glowing_hours_phaseR']=convertMinutesToHours($row['glowing_hours_phaseR']);
-         $row['non_glowing_hours_phaseR']=convertMinutesToHours($row['non_glowing_hours_phaseR']);
-        $row['glowing_hours_phaseY']=convertMinutesToHours($row['glowing_hours_phaseY']);
-        $row['non_glowing_hours_phaseY']=convertMinutesToHours($row['non_glowing_hours_phaseY']);
-        $row['glowing_hours_phaseB']=convertMinutesToHours($row['glowing_hours_phaseB']);
-        $row['non_glowing_hours_phaseB']=convertMinutesToHours($row['non_glowing_hours_phaseB']);
-        $row['TotalActiveHours']=convertMinutesToHours($row['TotalActiveHours']);
-        $row['TotalInActiveHours']=convertMinutesToHours($row['TotalInActiveHours']);
-        $data[] = $row;
+    
+    if($type === "LATEST") {
+        // MongoDB query for LATEST (equivalent to LIMIT 10 with ORDER BY id DESC then ASC)
+        $cursor = $collection->find(
+            ['device_id' => $id],
+            [
+                'sort' => ['_id' => -1],
+                'limit' => 10,
+                'projection' => [
+                    'date' => 1,
+                    'r_up' => 1,
+                    'r_down' => 1,
+                    'y_up' => 1,
+                    'y_down' => 1,
+                    'b_up' => 1,
+                    'b_down' => 1,
+                    'total_active_time' => 1,
+                    'total_inactive_hours' => 1
+                ]
+            ]
+        );
+        
+        // Convert cursor to array and reverse to get ASC order
+        $results = iterator_to_array($cursor);
+        $results = array_reverse($results);
+        
+    } else {
+        // MongoDB query for date range
+        $cursor = $collection->find(
+            [
+                'device_id' => $id,
+                'date' => [
+                    '$gte' => $start_date,
+                    '$lte' => $end_date
+                ]
+            ],
+            [
+                'projection' => [
+                    'date' => 1,
+                    'r_up' => 1,
+                    'r_down' => 1,
+                    'y_up' => 1,
+                    'y_down' => 1,
+                    'b_up' => 1,
+                    'b_down' => 1,
+                    'total_active_time' => 1,
+                    'total_inactive_hours' => 1
+                ]
+            ]
+        );
+        
+        $results = iterator_to_array($cursor);
     }
-    mysqli_close($conn);
+
+    // Process the results
+    foreach ($results as $row) {
+        // Convert MongoDB date to Y-m-d format
+        $dateString = '';
+        if (isset($row['date'])) {
+            if ($row['date'] instanceof MongoDB\BSON\UTCDateTime) {
+                // Convert MongoDB UTCDateTime to PHP DateTime and format as Y-m-d
+                $dateString = $row['date']->toDateTime()->format('Y-m-d');
+            } elseif (is_string($row['date'])) {
+                // If it's already a string, try to format it
+                $dateString = date('Y-m-d', strtotime($row['date']));
+            } else {
+                $dateString = $row['date']; // fallback
+            }
+        }
+        
+        $processedRow = [
+            'day' => $dateString,
+            'glowing_hours_phaseR' => convertMinutesToHours($row['r_up'] ?? 0),
+            'non_glowing_hours_phaseR' => convertMinutesToHours($row['r_down'] ?? 0),
+            'glowing_hours_phaseY' => convertMinutesToHours($row['y_up'] ?? 0),
+            'non_glowing_hours_phaseY' => convertMinutesToHours($row['y_down'] ?? 0),
+            'glowing_hours_phaseB' => convertMinutesToHours($row['b_up'] ?? 0),
+            'non_glowing_hours_phaseB' => convertMinutesToHours($row['b_down'] ?? 0),
+            'TotalActiveHours' => convertMinutesToHours($row['total_active_time'] ?? 0),
+            'TotalInActiveHours' => convertMinutesToHours($row['total_inactive_hours'] ?? 0)
+        ];
+        
+        $data[] = $processedRow;
+    }
+    
     echo json_encode(array($data, $phase));
-   // echo json_encode($data);
-
-
 }
-function sanitize_input($data, $conn) {
+
+function sanitize_input($data) {
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
-    return mysqli_real_escape_string($conn, $data);
+    return $data;
 }
+
 function convertMinutesToHours($totalMinutes) {
     $hours = floor($totalMinutes / 60); // Get the total hours
     $minutes = $totalMinutes % 60; // Get the remaining minutes
