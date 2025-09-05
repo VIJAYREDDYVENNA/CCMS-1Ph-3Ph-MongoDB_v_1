@@ -13,7 +13,7 @@ $user_name = $sessionVars['user_name'];
 $user_email = $sessionVars['user_email'];
 $permission_check = 0;
 
- $selection="";
+ $selection="ALL";
 
 $d_name = "";
 $data = "";
