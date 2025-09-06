@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
     // Step 3: Fetch electricians for these device_ids from user DB
         $electrician_map = [];
         if (!empty($device_ids)) {
-            $electricians_cursor = $user_db_conn->electricians_list->find([
+            $electricians_cursor = $user_db_conn->electrician_devices->find([
                 'device_id' => ['$in' => $device_ids]
             ]);
             foreach ($electricians_cursor as $electr) {
