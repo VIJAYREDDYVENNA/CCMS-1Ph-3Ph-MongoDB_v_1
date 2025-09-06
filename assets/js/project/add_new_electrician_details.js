@@ -252,7 +252,7 @@ function updateElectricionListTable(data) {
                 <td>${electrician.phone}</td>
                 <td>
                     <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                        <button class="btn btn-danger btn-sm remove-access" onclick="removeElectrician(${electrician.id}, '${electrician.name}', '${electrician.phone}')">Remove</button>
+                        <button class="btn btn-danger btn-sm remove-access" onclick="removeElectrician('${electrician.id}', '${electrician.name}', '${electrician.phone}')">Remove</button>
                     </div>
                 </td>
             </tr>`;
@@ -870,27 +870,30 @@ function updateElectricianTable(data) {
     // Render electricians table
     if (Array.isArray(data.electricians) && data.electricians.length > 0) {
         data.electricians.forEach(electrician => {
-            tableBody += `
-                <tr>
-                    <td style="width: 80px !important; min-width: 80px !important; max-width: 80px !important; padding: 0; text-align: center; overflow: hidden;">
-                        <input type="checkbox" class="row-checkbox" value="${electrician.id}" />
-                    </td>
-                    <td>${electrician.device_id}</td>
-                    <td>${electrician.name}</td>
-                    <td>${electrician.phone}</td>
-                    <td>
-                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                            <button class="btn btn-danger btn-sm w-100 w-sm-auto remove-access" onclick="removeElectricianAccess(${electrician.id})">Remove</button>
-                            <button class="btn btn-primary btn-sm w-100 w-sm-auto edit-electrician" 
-                                    data-id="${electrician.device_id}" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#editElectricianModal">
-                                Edit
-                            </button>
-                        </div>
-                    </td>
-                </tr>`;
-        });
+    tableBody += `
+        <tr>
+            <td style="width: 80px !important; min-width: 80px !important; max-width: 80px !important; padding: 0; text-align: center; overflow: hidden;">
+                <input type="checkbox" class="row-checkbox" value="${electrician.id}" />
+            </td>
+            <td>${electrician.device_id}</td>
+            <td>${electrician.name}</td>
+            <td>${electrician.phone}</td>
+            <td>
+                <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                    <button class="btn btn-danger btn-sm w-100 w-sm-auto remove-access" 
+                        onclick="removeElectricianAccess('${electrician.id}')">Remove</button>
+                    <button class="btn btn-primary btn-sm w-100 w-sm-auto edit-electrician" 
+                        data-id="${electrician.device_id}" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#editElectricianModal">
+                        Edit
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+});
+
+        
     } else {
         tableBody += '<tr><td colspan="5" class="text-center">No electricians assigned to this group.</td></tr>';
     }
@@ -986,6 +989,7 @@ function removeSelectedElectricians() {
             .catch(error => console.error("Error removing electricians:", error));
     }
 }
+
 
 // function removeElectrician(electricianId) {
 //     // console.log(electricianId);

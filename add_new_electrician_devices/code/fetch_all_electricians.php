@@ -4,69 +4,45 @@ require_once BASE_PATH_1 . 'config_db/config.php';
 require_once BASE_PATH_1 . 'session/session-manager.php';
 
 SessionManager::checkSession();
-$sessionVars = SessionManager::SessionVariables();
-$mobile_no = $sessionVars['mobile_no'];
-$user_id = $sessionVars['user_id'];
-$role = $sessionVars['role'];
+$sessionVars   = SessionManager::SessionVariables();
+$mobile_no     = $sessionVars['mobile_no'];
+$user_id       = $sessionVars['user_id'];
+$role          = $sessionVars['role'];
 $user_login_id = $sessionVars['user_login_id'];
 
-// Establish database connection
-$conn = mysqli_connect(HOST, USERNAME, PASSWORD, DB_USER);
-if (!$conn) {
-    die(json_encode(["status" => "error", "message" => "Database connection failed."]));
-}
+header('Content-Type: application/json');
 
-// Prepare SQL query
-if ($role == "SUPERADMIN") {
-    $sql = "SELECT id, name, phone_number FROM electricians_list  ORDER BY name ASC";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_execute($stmt);
-    if ($stmt) {
-        // Bind parameters and execute
-        mysqli_stmt_execute($stmt);
+try {
+    $electriciansColl = $user_db_conn->electricians_list;
+    $filter = [];
 
-        // Get result
-        $result = mysqli_stmt_get_result($stmt);
-        $electricians = [];
-        while ($row = mysqli_fetch_assoc($result)) {
-            $electricians[] = [
-                "id" => $row["id"],
-                "name" => $row["name"],
-                "phone" => $row["phone_number"]
-            ];
-        }
-
-        echo json_encode(["status" => "success", "data" => $electricians]);
-        mysqli_stmt_close($stmt);
-    } else {
-        echo json_encode(["status" => "error", "message" => "Failed to prepare SQL statement."]);
+    if ($role !== "SUPERADMIN") {
+        $filter['user_login_id'] = (int)$user_login_id;
     }
-} else {
-    $sql = "SELECT id, name, phone_number FROM electricians_list WHERE user_login_id = ? ORDER BY name ASC";
-    $stmt = mysqli_prepare($conn, $sql);
 
-    if ($stmt) {
-        // Bind parameters and execute
-        mysqli_stmt_bind_param($stmt, "i", $user_login_id);
-        mysqli_stmt_execute($stmt);
+    $cursor = $electriciansColl->find(
+        $filter,
+        ['sort' => ['name' => 1]] // Sort by name ascending
+    );
 
-        // Get result
-        $result = mysqli_stmt_get_result($stmt);
-        $electricians = [];
-
-        while ($row = mysqli_fetch_assoc($result)) {
-            $electricians[] = [
-                "id" => $row["id"],
-                "name" => $row["name"],
-                "phone" => $row["phone_number"]
-            ];
-        }
-
-        echo json_encode(["status" => "success", "data" => $electricians]);
-        mysqli_stmt_close($stmt);
-    } else {
-        echo json_encode(["status" => "error", "message" => "Failed to prepare SQL statement."]);
+    $electricians = [];
+    foreach ($cursor as $doc) {
+        $electricians[] = [
+            "id"    => (string)$doc["_id"],
+            "name"  => $doc["name"] ?? null,
+            "phone" => $doc["phone_number"] ?? null
+        ];
     }
+
+    echo json_encode([
+        "status" => "success",
+        "data"   => $electricians
+    ]);
+
+} catch (Exception $e) {
+    echo json_encode([
+        "status"  => "error",
+        "message" => $e->getMessage(),
+        "data"    => []
+    ]);
 }
-// Close database connection
-mysqli_close($conn);
