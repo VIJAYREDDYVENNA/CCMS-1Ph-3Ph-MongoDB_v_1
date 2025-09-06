@@ -239,11 +239,9 @@ $permission_check = 0;
                             <div class="row mt-2 d-flex justify-content-center">
                                 <div class="col-12">
                                     <!-- Search and Remove All -->
-                                    <!-- Search and Remove All - Updated for responsiveness -->
-                                    <!-- Search and Remove All - Updated for responsiveness -->
                                     <div class="d-flex flex-column flex-xl-row justify-content-end mb-3 align-items-xl-center gap-2">
                                         <div class="input-group search-container">
-                                            <input type="text" id="searchBar" class="form-control" placeholder="Search by Device ID or Electrician Name" >
+                                            <input type="text" id="searchBar" class="form-control" placeholder="Search by Device ID or Electrician Name">
                                             <button class="btn btn-primary" type="button" onclick="filterTable()">
                                                 <i class="bi bi-search"></i> Search
                                             </button>
@@ -273,19 +271,21 @@ $permission_check = 0;
                                                 </div>
                                                 <div class="col-auto">
                                                     <select id="items-per-page" class="form-select">
-                                                        <option value="100" selected>100</option>
+                                                        <option value="20" selected>20</option>
+                                                        <option value="50">50</option>
+                                                        <option value="100">100</option>
                                                         <option value="200">200</option>
-                                                        <option value="300">300</option>
-                                                        <option value="500">500</option>
                                                     </select>
                                                 </div>
+                                                <div class="col-auto">
+                                                    <span id="range-info" class="text-muted small"></span>
+                                                </div>
                                             </div>
-
                                         </div>
                                         <div class="col">
                                             <div class="pagination-container">
                                                 <nav>
-                                                    <ul class="pagination justify-content-end " id="pagination">
+                                                    <ul class="pagination justify-content-end" id="pagination">
                                                     </ul>
                                                 </nav>
                                             </div>
@@ -294,9 +294,6 @@ $permission_check = 0;
                                 </div>
                             </div>
                         </div>
-
-
-
                     </div>
                 </div>
             </div>

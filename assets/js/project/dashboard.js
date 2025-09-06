@@ -124,12 +124,16 @@ function update_alerts(group_id) {
         }
     });
 }
+let items_per_page=200;
+
+
 
 document.getElementById('total_device').onclick = function () {
 
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        get_devices_status(group_id, "ALL")
+        items_per_page=parseInt($('#items-per-page-total').val());
+        get_devices_status(group_id, "ALL",1,items_per_page)
     }
 };
 document.getElementById('installed_devices_list').onclick = function () {
@@ -137,7 +141,10 @@ document.getElementById('installed_devices_list').onclick = function () {
 
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        get_devices_status(group_id, "INSTALLED")
+
+        items_per_page=parseInt($('#items-per-page-install').val());
+     
+        get_devices_status(group_id, "INSTALLED",1,items_per_page)
     }
 };
 
@@ -146,58 +153,214 @@ document.getElementById('not_installed_devices_list').onclick = function () {
 
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        get_devices_status(group_id, "NOTINSTALLED")
+        items_per_page=parseInt($('#items-per-page-uninstall').val());
+        get_devices_status(group_id, "NOTINSTALLED",1,items_per_page)
     }
 };
 
-function get_devices_status(group_id, status) {
+// Global variables for pagination state
+let currentPage = 1;
+let currentItemsPerPage = 20;
+let currentGroupId = "ALL";
+let currentStatus = "ALL";
+let totalPages = 1;
+
+function get_devices_status(group_id, status, page = 1, items_per_page = null) {
+ 
+    if (items_per_page === null) {
+        items_per_page = currentItemsPerPage;
+    }
+
+    // If status changed, reset to page 1
+    if (status !== currentStatus || group_id !== currentGroupId) {
+        page = 1;
+    }
+
+    // Update global state
+    currentPage = page;
+    currentItemsPerPage = items_per_page;
+    currentGroupId = group_id;
+    currentStatus = status;
 
     $("#pre-loader").css('display', 'block');
     $.ajax({
-        type: "POST", // Method type
-        url: "../dashboard/code/dashboard_device_list.php", // PHP script URL
+        type: "POST",
+        url: "../dashboard/code/dashboard_device_list.php",
         data: {
-            GROUP_ID: group_id, STATUS: status // Optional data to send to PHP script
+            GROUP_ID: group_id,
+            STATUS: status,
+            PAGE: page,
+            ITEMS_PER_PAGE: items_per_page
         },
-        dataType: "json", // Expected data type from PHP script
+        dataType: "json",
         success: function (response) {
             $("#pre-loader").css('display', 'none');
+            
+            // Clear all tables
             $("#not_installed_device_list_table").html("");
             $("#total_device_table").html("");
             $("#installed_device_list_table").html("");
+            
+            // Reset checkboxes
             document.querySelectorAll('.select_all').forEach(el => el.checked = false);
             document.querySelectorAll('.selected_count').forEach(el => el.textContent = 0);
-            if (status == "ALL") {
-                $("#total_device_table").html(response);
+            
+            // Handle response
+            if (response.success) {
+                // Populate appropriate table
+                if (status == "ALL") {
+                    $("#total_device_table").html(response.data);
+                } else if (status == "INSTALLED") {
+                    $("#installed_device_list_table").html(response.data);
+                } else {
+                    $("#not_installed_device_list_table").html(response.data);
+                }
+                
+                // Update pagination
+                totalPages = response.totalPages;
+                updatePagination(response.totalRecords, response.totalPages, page,status);
                 setupCheckboxListeners();
+            } else {
+                // Handle error
+                const errorRow = `<tr><td colspan="6" class="text-danger">${response.message || 'Error loading data'}</td></tr>`;
+                if (status == "ALL") {
+                    $("#total_device_table").html(errorRow);
+                } else if (status == "INSTALLED") {
+                    $("#installed_device_list_table").html(errorRow);
+                } else {
+                    $("#not_installed_device_list_table").html(errorRow);
+                }
+                updatePagination(0, 0, 1,'ALL');
             }
-            else if (status == "INSTALLED") {
-                $("#installed_device_list_table").html(response);
-                setupCheckboxListeners();
-            }
-            else {
-                $("#not_installed_device_list_table").html(response);
-                setupCheckboxListeners();
-            }
-
         },
         error: function (xhr, status, error) {
             $("#pre-loader").css('display', 'none');
-            if (status == "ALL") {
-                $("#total_device_table").html("");
+            
+            // Clear tables on error
+            if (currentStatus == "ALL") {
+                $("#total_device_table").html(`<tr><td colspan="6" class="text-danger">Error loading data</td></tr>`);
+            } else if (currentStatus == "INSTALLED") {
+                $("#installed_device_list_table").html(`<tr><td colspan="6" class="text-danger">Error loading data</td></tr>`);
+            } else {
+                $("#not_installed_device_list_table").html(`<tr><td colspan="3" class="text-danger">Error loading data</td></tr>`);
             }
-            else if (status == "INSTALLED") {
-                $("#installed_device_list_table").html("");
-            }
-            else {
-                $("#not_installed_device_list_table").html("");
-            }
-
-            // Handle errors here if necessary
+            
+            updatePagination(0, 0, 1,'ALL');
         }
     });
 }
 
+function updatePagination(totalRecords, totalPages, currentPage, status) {
+   
+
+    // Set the appropriate pagination container based on status
+    let pagination;
+    if (status === 'ALL') {
+        pagination = $("#pagination-total");
+    } else if (status === 'INSTALLED') {
+        pagination = $("#pagination-install");
+    } else if (status === 'NOTINSTALLED') {
+        pagination = $("#pagination-uninstall");
+    }
+
+    // Clear existing pagination items
+    pagination.empty();
+
+    // If only one page, no pagination needed
+    if (totalPages <= 1) {
+        return;
+    }
+    
+    // Call pagination function to update page numbers
+    pagination_fun(pagination, totalPages, currentPage);
+}
+
+function pagination_fun(pagination, totalPages, page) {
+    page = Number(page);
+    
+    const maxPagesToShow = 5;
+    const windowSize = Math.floor(maxPagesToShow / 2);
+    let startPage = Math.max(1, page - windowSize);
+    let endPage = Math.min(totalPages, page + windowSize);
+    
+    if (page - windowSize < 1) {
+        endPage = Math.min(totalPages, endPage + (windowSize - (page - 1)));
+    }
+    
+    if (page + windowSize > totalPages) {
+        startPage = Math.max(1, startPage - (page + windowSize - totalPages));
+    }
+    
+    // Add "First" button
+    if (page > 1) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="1">First</a>
+            </li>
+        `);
+    }
+    
+    // Add "Previous" button
+    if (page > 1) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
+            </li>
+        `);
+    }
+    
+    // Add page number buttons
+    for (let i = startPage; i <= endPage; i++) {
+        pagination.append(`
+            <li class="page-item ${i === page ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
+        `);
+    }
+    
+    // Add "Next" button
+    if (page < totalPages) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page + 1}">Next</a>
+            </li>
+        `);
+    }
+    
+    // Add "Last" button
+    if (page < totalPages) {
+        pagination.append(`
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${totalPages}">Last</a>
+            </li>
+        `);
+    }
+}
+
+// Event handlers for pagination
+$(document).ready(function() {
+    // Handle pagination clicks
+    $(document).on('click', '.page-link', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        if (page && page !== currentPage) {
+            get_devices_status(currentGroupId, currentStatus, page, currentItemsPerPage);
+        }
+    });
+    
+    // Handle items per page change
+    $('#items-per-page-total,#items-per-page-install,#items-per-page-uninstall').on('change', function() {
+        const itemsPerPage = $(this).val();
+        currentItemsPerPage = itemsPerPage;
+        // Reset to page 1 when changing items per page
+        get_devices_status(currentGroupId, currentStatus, 1, itemsPerPage);
+    });
+});
+
+// You can call this function from your existing buttons/dropdowns
+// function loadDevicesByStatus(status) {
+//     get_devices_status(currentGroupId, status, 1, currentItemsPerPage);
+// }
 document.getElementById('active_device_list').onclick = function () {
 
     let group_id = group_list.value;
@@ -556,6 +719,7 @@ function confirmAction(action, selectedDeviceIds, tableId, selectedDevices) {
                     alert("Devices updated successfully!");
                     update_list(action, selectedDevices, tableId, actionDate);
                     update_switchPoints_status(group_name);
+                    $('#select-all-total').prop('checked', false);
                 } else {
                     alert("Error: " + response.message);
                 }
