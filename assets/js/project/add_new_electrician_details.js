@@ -80,6 +80,8 @@ var interval_Id;
 
 // interval_Id=setInterval(refresh_data, 60000);
 function refresh_data() {
+// $("#pre-loader").css('display', 'block');
+	document.getElementById('pre-loader').style.display = 'block';
 
     let group_name = document.getElementById('group-list').value;
     if (group_name !== "" && group_name !== null) {
@@ -88,6 +90,7 @@ function refresh_data() {
         fetchElectrician_details(group_name)
         fetchElectricians(group_name);
     }
+    // $("#pre-loader").css('display', 'none');
 }
 
 function submitElectricianForm1() {
@@ -337,12 +340,18 @@ document.getElementById('confirmRemoveElectrician').addEventListener('click', fu
 
 
 function RemoveAllElectricions() {
+    // FIXED: Remove parseInt() to keep the full ObjectId string
     const selectedIds = Array.from(document.querySelectorAll(".row-checkbox-list:checked"))
-        .map(cb => parseInt(cb.value));
+        .map(cb => cb.value); // Keep as string, don't convert to integer
 
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0) {
+        alert("Please select at least one electrician to remove.");
+        return;
+    }
 
-    if (confirm("Are you sure you want to remove all selected electricians?")) {
+    console.log("Selected IDs:", selectedIds); // Debug log to verify IDs
+
+    if (confirm(`Are you sure you want to remove ${selectedIds.length} selected electrician(s)?`)) {
         fetch("../add_new_electrician_devices/code/remove_electrician.php", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -350,13 +359,17 @@ function RemoveAllElectricions() {
         })
             .then(res => res.json())
             .then(data => {
+                console.log("Server response:", data); // Debug log
                 alert(data.message);
-                refresh_data();
-                toggleRemoveAllButtonList(); // Disable the button after refresh
-
-
+                if (data.status === "success") {
+                    refresh_data();
+                    toggleRemoveAllButtonList(); // Disable the button after refresh
+                }
             })
-            .catch(err => console.error("Error removing electricians:", err));
+            .catch(err => {
+                console.error("Error removing electricians:", err);
+                alert("An error occurred while removing electricians. Please try again.");
+            });
     }
 }
 
