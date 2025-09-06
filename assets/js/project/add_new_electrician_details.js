@@ -756,48 +756,58 @@ function removeDevice(device_id) {
 //     document.getElementById("electricianTable").innerHTML = tableHTML;
 // }
 let currentPage = 1;
-let itemsPerPage = 100;
-let electriciansData = [];
+let itemsPerPage = 20; // Default 20 items per page
+let totalCount = 0; // Total count from server for pagination
 
-// Update the fetchElectricians function to store the data globally
-function fetchElectricians(group_id) {
+// SERVER-SIDE PAGINATION: Fetches only the requested page data from database
+function fetchElectricians(group_id, page = 1, limit = itemsPerPage) {
     if (group_id) {
+        // Show loading indicator
+        $("#pre-loader").css('display', 'block');
+        
         $.ajax({
             type: "POST",
             url: "../add_new_electrician_devices/code/fetch_electricians_by_device.php",
-            data: { group_id: group_id },
+            data: { 
+                group_id: group_id,
+                page: page,           // Which page to fetch (1, 2, 3...)
+                limit: limit          // How many records per page (20, 50, 100...)
+            },
             dataType: "json",
             success: function (data) {
-                electriciansData = data.electricians || []; // Store data globally
-                currentPage = 1; // Reset to first page on new data
+                // Server returns ONLY the current page's data (e.g., records 21-40 for page 2)
+                totalCount = data.total_count || 0; // Total records in database
+                currentPage = page;
+                
                 updateElectricianTable(data);
                 setupPagination();
+                
+                $("#pre-loader").css('display', 'none');
             },
             error: function (xhr, status, error) {
                 console.error("Error fetching electricians:", error);
+                $("#pre-loader").css('display', 'none');
             }
         });
     }
 }
 
-// Function to set up pagination
+// Setup pagination controls based on total count from server
 function setupPagination() {
-    const totalItems = electriciansData.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-    // Update pagination controls
     const paginationEl = document.getElementById('pagination');
     let paginationHTML = '';
 
     // Previous button
     paginationHTML += `
         <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${currentPage - 1}); return false;">Previous</a>
+            <a class="page-link" href="#" onclick="goToPreviousPage(); return false;">Previous</a>
         </li>
     `;
 
-    // Page numbers
-    const maxPages = 5; // Maximum number of page links to show
+    // Page numbers (show max 5 page numbers)
+    const maxPages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
     let endPage = Math.min(totalPages, startPage + maxPages - 1);
 
@@ -808,59 +818,76 @@ function setupPagination() {
     for (let i = startPage; i <= endPage; i++) {
         paginationHTML += `
             <li class="page-item ${currentPage === i ? 'active' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+                <a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a>
             </li>
         `;
     }
 
     // Next button
     paginationHTML += `
-        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${currentPage + 1}); return false;">Next</a>
+        <li class="page-item ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="goToNextPage(); return false;">Next</a>
         </li>
     `;
 
     paginationEl.innerHTML = paginationHTML;
 
-    // Update items per page dropdown event listener
-    document.getElementById('items-per-page').addEventListener('change', function () {
-        itemsPerPage = parseInt(this.value);
-        currentPage = 1; // Reset to first page when changing items per page
-        renderCurrentPage();
-        setupPagination();
-    });
+    // Setup items per page dropdown change handler
+    setupItemsPerPageHandler();
+    
+    // Update display info
+    updateDisplayInfo();
 }
 
-// Function to change the current page
-function changePage(newPage) {
-    const totalPages = Math.ceil(electriciansData.length / itemsPerPage);
-
-    if (newPage >= 1 && newPage <= totalPages) {
-        currentPage = newPage;
-        renderCurrentPage();
-        setupPagination();
+// Handle items per page dropdown change - fetches new data from server
+function setupItemsPerPageHandler() {
+    const itemsPerPageSelect = document.getElementById('items-per-page');
+    if (itemsPerPageSelect) {
+        // Remove existing listeners to prevent duplicates
+        itemsPerPageSelect.removeEventListener('change', handleItemsPerPageChange);
+        itemsPerPageSelect.addEventListener('change', handleItemsPerPageChange);
     }
-
-    return false; // Prevent default action
 }
 
-// Function to render the current page data
-function renderCurrentPage() {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, electriciansData.length);
-
-    const pageData = electriciansData.slice(startIndex, endIndex);
-
-    // Create paged data object to pass to updateElectricianTable
-    const pagedData = {
-        electricians: pageData,
-        unassigned_devices: [] // Keep the unassigned devices as is
-    };
-
-    updateElectricianTable(pagedData);
+function handleItemsPerPageChange(event) {
+    itemsPerPage = parseInt(event.target.value);
+    currentPage = 1; // Reset to page 1 when changing items per page
+    
+    // Get current group and fetch new data from server
+    const currentGroupId = localStorage.getItem("GroupNameValue") || "ALL";
+    fetchElectricians(currentGroupId, currentPage, itemsPerPage);
 }
 
-// Update the updateElectricianTable function for pagination
+// Navigate to specific page - fetches that page's data from server
+function goToPage(pageNumber) {
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+        const currentGroupId = localStorage.getItem("GroupNameValue") || "ALL";
+        // This will fetch records (pageNumber-1)*itemsPerPage to pageNumber*itemsPerPage
+        fetchElectricians(currentGroupId, pageNumber, itemsPerPage);
+    }
+    return false;
+}
+
+// Go to next page - fetches next set of records from server
+function goToNextPage() {
+    const totalPages = Math.ceil(totalCount / itemsPerPage);
+    if (currentPage < totalPages) {
+        goToPage(currentPage + 1);
+    }
+    return false;
+}
+
+// Go to previous page - fetches previous set of records from server  
+function goToPreviousPage() {
+    if (currentPage > 1) {
+        goToPage(currentPage - 1);
+    }
+    return false;
+}
+
+// Update table with current page data (received from server)
 function updateElectricianTable(data) {
     let tableHeader = `
         <thead>
@@ -880,70 +907,80 @@ function updateElectricianTable(data) {
 
     let tableBody = '<tbody>';
 
-    // Render electricians table
+    // Render current page electricians (only 20 records from server)
     if (Array.isArray(data.electricians) && data.electricians.length > 0) {
         data.electricians.forEach(electrician => {
-    tableBody += `
-        <tr>
-            <td style="width: 80px !important; min-width: 80px !important; max-width: 80px !important; padding: 0; text-align: center; overflow: hidden;">
-                <input type="checkbox" class="row-checkbox" value="${electrician.id}" />
-            </td>
-            <td>${electrician.device_id}</td>
-            <td>${electrician.name}</td>
-            <td>${electrician.phone}</td>
-            <td>
-                <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-                    <button class="btn btn-danger btn-sm w-100 w-sm-auto remove-access" 
-                        onclick="removeElectricianAccess('${electrician.id}')">Remove</button>
-                    <button class="btn btn-primary btn-sm w-100 w-sm-auto edit-electrician" 
-                        data-id="${electrician.device_id}" 
-                        data-bs-toggle="modal" 
-                        data-bs-target="#editElectricianModal">
-                        Edit
-                    </button>
-                </div>
-            </td>
-        </tr>`;
-});
-
-        
+            tableBody += `
+                <tr>
+                    <td style="width: 80px !important; min-width: 80px !important; max-width: 80px !important; padding: 0; text-align: center; overflow: hidden;">
+                        <input type="checkbox" class="row-checkbox" value="${electrician.id}" />
+                    </td>
+                    <td>${electrician.device_id}</td>
+                    <td>${electrician.name}</td>
+                    <td>${electrician.phone}</td>
+                    <td>
+                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                            <button class="btn btn-danger btn-sm w-100 w-sm-auto remove-access" 
+                                onclick="removeElectricianAccess('${electrician.id}')">Remove</button>
+                            <button class="btn btn-primary btn-sm w-100 w-sm-auto edit-electrician" 
+                                data-id="${electrician.device_id}" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editElectricianModal">
+                                Edit
+                            </button>
+                        </div>
+                    </td>
+                </tr>`;
+        });
     } else {
-        tableBody += '<tr><td colspan="5" class="text-center">No electricians assigned to this group.</td></tr>';
+        tableBody += '<tr><td colspan="5" class="text-center">No electricians found for this page.</td></tr>';
     }
 
     tableBody += '</tbody>';
-
     document.getElementById("electricianTable").innerHTML = tableHeader + tableBody;
 
-    // Update the count and range information
-    const total = electriciansData.length;
-    const start = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
-    const end = Math.min(start + itemsPerPage - 1, total);
-
-    // You can add this element to your HTML to show the range
-    // const rangeInfo = document.getElementById('range-info');
-    // if (rangeInfo) {
-    //     rangeInfo.textContent = `Showing ${start} to ${end} of ${total} entries`;
-    // }
-
-    // Attach event listeners after table is updated
+    // Attach event listeners after table update
     setupCheckboxListeners();
 }
 
-// Add this function to initialize the items per page value from the dropdown
+// OPTIMIZED: Debounced display info update
+function updateDisplayInfo() {
+    // Clear previous timeout to debounce rapid updates
+    if (window.displayInfoTimeout) {
+        clearTimeout(window.displayInfoTimeout);
+    }
+    
+    window.displayInfoTimeout = setTimeout(() => {
+        const start = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+        const end = Math.min(currentPage * itemsPerPage, totalCount);
+
+        const rangeInfo = document.getElementById('range-info');
+        if (rangeInfo) {
+            rangeInfo.textContent = `${start}-${end} of ${totalCount}`;
+        }
+    }, 50); // Small delay to batch rapid updates
+}
+
+// Initialize items per page from dropdown
 function initializeItemsPerPage() {
     const itemsPerPageSelect = document.getElementById('items-per-page');
     if (itemsPerPageSelect) {
-        itemsPerPage = parseInt(itemsPerPageSelect.value);
+        itemsPerPage = parseInt(itemsPerPageSelect.value) || 20;
     }
 }
 
-// Add this to your document ready function
-$(document).ready(function () {
-    // Your existing code...
+// Backward compatibility functions (keeping old function names)
+function changePage(pageNumber) {
+    return goToPage(pageNumber);
+}
 
+// Document ready
+$(document).ready(function () {
     // Initialize items per page value
     initializeItemsPerPage();
+    
+    console.log("Pagination initialized - Server-side pagination enabled");
+    console.log(`Default: ${itemsPerPage} items per page`);
 });
 
 
