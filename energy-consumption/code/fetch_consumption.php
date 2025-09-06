@@ -2,6 +2,7 @@
 require_once '../../base-path/config-path.php';
 require_once BASE_PATH_1 . 'config_db/config.php';
 require_once BASE_PATH_1 . 'session/session-manager.php';
+
 SessionManager::checkSession();
 $sessionVars = SessionManager::SessionVariables();
 
@@ -13,26 +14,20 @@ $user_name = $sessionVars['user_name'];
 $user_email = $sessionVars['user_email'];
 $permission_check = 0;
 
-// Function to sanitize input
-function sanitize_input($data, $conn) {
+use MongoDB\BSON\UTCDateTime;
+use MongoDB\Exception\Exception as MongoException;
+
+// Function to sanitize input (modified for MongoDB)
+function sanitize_input($data) {
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
-    return mysqli_real_escape_string($conn, $data);
+    return $data;
 }
 
 // Handle API request
 if (isset($_POST['energyconsumption'])) {
     header('Content-Type: application/json');
-
-    $conn = mysqli_connect(HOST, USERNAME, PASSWORD);
-    if (!$conn) {
-        echo json_encode([
-            "status" => "error",
-            "message" => "Database connection failed: " . mysqli_connect_error()
-        ]);
-        exit;
-    }
 
     try {
         if (!isset($_POST['D_id'])) {
@@ -44,77 +39,110 @@ if (isset($_POST['energyconsumption'])) {
         }
 
         // Sanitize inputs
-        $device_id = sanitize_input($_POST['D_id'], $conn);
-        $fromdate = sanitize_input($_POST['fromdate'], $conn);
-        $fromtime = sanitize_input($_POST['fromtime'], $conn);
-        $todate   = sanitize_input($_POST['todate'], $conn);
-        $totime   = sanitize_input($_POST['totime'], $conn);
-
-        $db = strtolower($device_id);
+        $device_id = sanitize_input($_POST['D_id']);
+        $fromdate = sanitize_input($_POST['fromdate']);
+        $fromtime = sanitize_input($_POST['fromtime']);
+        $todate = sanitize_input($_POST['todate']);
+        $totime = sanitize_input($_POST['totime']);
 
         // Validate date formats
         if (!strtotime($fromdate . ' ' . $fromtime) || !strtotime($todate . ' ' . $totime)) {
             throw new Exception("Invalid date/time format.");
         }
 
-        // FROM query
-        $query_from = "SELECT device_id, date_time, energy_kwh_total, energy_kvah_total 
-                       FROM `$db`.`live_data` 
-                       WHERE DATE(date_time) = '$fromdate' AND TIME(date_time) >= '$fromtime' 
-                       ORDER BY date_time ASC 
-                       LIMIT 1";
+        // Create DateTime objects for MongoDB queries
+        $from_datetime_str = $fromdate . ' ' . $fromtime;
+        $to_datetime_str = $todate . ' ' . $totime;
+        
+        $from_timestamp = strtotime($from_datetime_str);
+        $to_timestamp = strtotime($to_datetime_str);
 
-        $result_from = mysqli_query($conn, $query_from);
+        // Convert to MongoDB UTCDateTime
+        $from_utc = new UTCDateTime($from_timestamp * 1000);
+        $to_utc = new UTCDateTime($to_timestamp * 1000);
 
-        // If no result found on the same day, try next day
-        if (mysqli_num_rows($result_from) === 0) {
-            $next_date = date('Y-m-d', strtotime($fromdate . ' +1 day'));
-            $query_from = "SELECT device_id, date_time, energy_kwh_total, energy_kvah_total 
-                           FROM `$db`.`live_data` 
-                           WHERE DATE(date_time) >= '$fromdate' 
-                           ORDER BY date_time ASC 
-                           LIMIT 1";
-            $result_from = mysqli_query($conn, $query_from);
+        // Get MongoDB collection - try different possible collection names
+        $possible_collections = ['livedata', 'live_data', 'LiveData'];
+        $collection = null;
+        
+        foreach ($possible_collections as $coll_name) {
+            try {
+                $test_collection = $devices_db_conn->selectCollection($coll_name);
+                $test_count = $test_collection->countDocuments(['device_id' => $device_id], ['maxTimeMS' => 5000]);
+                if ($test_count > 0) {
+                    $collection = $test_collection;
+                    break;
+                }
+            } catch (Exception $e) {
+                // Continue to next collection name
+                continue;
+            }
+        }
+        
+        if (!$collection) {
+            // Default to livedata
+            $collection = $devices_db_conn->livedata;
         }
 
-        if (mysqli_num_rows($result_from) === 0) {
+        // FROM query - Find the first record >= from_datetime for the device
+        $from_filter = [
+            'device_id' => $device_id,
+            'date_time' => ['$gte' => $from_utc]
+        ];
+
+        $from_options = [
+            'sort' => ['date_time' => 1],
+            'limit' => 1,
+            'projection' => [
+                'device_id' => 1,
+                'date_time' => 1,
+                'energy_kwh_total' => 1,
+                'energy_kvah_total' => 1
+            ]
+        ];
+
+        $from_result = $collection->findOne($from_filter, $from_options);
+
+        if (!$from_result) {
             throw new Exception("No data found for the 'From' date time range.");
         }
 
-        $from_data = mysqli_fetch_assoc($result_from);
+        // TO query - Find the last record <= to_datetime for the device
+        $to_filter = [
+            'device_id' => $device_id,
+            'date_time' => ['$lte' => $to_utc]
+        ];
 
-        // TO query
-        $query_to = "SELECT device_id, date_time, energy_kwh_total, energy_kvah_total 
-                     FROM `$db`.`live_data` 
-                     WHERE DATE(date_time) = '$todate' AND TIME(date_time) <= '$totime' 
-                     ORDER BY date_time DESC 
-                     LIMIT 1";
+        $to_options = [
+            'sort' => ['date_time' => -1],
+            'limit' => 1,
+            'projection' => [
+                'device_id' => 1,
+                'date_time' => 1,
+                'energy_kwh_total' => 1,
+                'energy_kvah_total' => 1
+            ]
+        ];
 
-        $result_to = mysqli_query($conn, $query_to);
+        $to_result = $collection->findOne($to_filter, $to_options);
 
-        // If no result found on the same day, try previous day
-        if (mysqli_num_rows($result_to) === 0) {
-            $prev_date = date('Y-m-d', strtotime($todate . ' -1 day'));
-            $query_to = "SELECT device_id, date_time, energy_kwh_total, energy_kvah_total 
-                         FROM `$db`.`live_data` 
-                         WHERE DATE(date_time) <= '$todate' 
-                         ORDER BY date_time DESC 
-                         LIMIT 1";
-            $result_to = mysqli_query($conn, $query_to);
+        if (!$to_result) {
+            throw new Exception("No data found for device '$device_id' in the 'To' date time range.");
         }
 
-        if (mysqli_num_rows($result_to) === 0) {
-            throw new Exception("No data found for the 'To' date time range.");
-        }
-
-        $to_data = mysqli_fetch_assoc($result_to);
+        // Extract values
+        $from_kwh = $from_result['energy_kwh_total'] ?? 0;
+        $from_kvah = $from_result['energy_kvah_total'] ?? 0;
+        $to_kwh = $to_result['energy_kwh_total'] ?? 0;
+        $to_kvah = $to_result['energy_kvah_total'] ?? 0;
 
         // Calculate consumption
-        $diff_kwh = $to_data['energy_kwh_total'] - $from_data['energy_kwh_total'];
-        $diff_kvah = $to_data['energy_kvah_total'] - $from_data['energy_kvah_total'];
+        $diff_kwh = $to_kwh - $from_kwh;
+        $diff_kvah = $to_kvah - $from_kvah;
 
-        $actual_from_time = date('Y-m-d H:i:s', strtotime($from_data['date_time']));
-        $actual_to_time = date('Y-m-d H:i:s', strtotime($to_data['date_time']));
+        // Convert MongoDB dates to readable format (handle timezone properly)
+        $actual_from_time = $from_result['date_time']->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
+        $actual_to_time = $to_result['date_time']->toDateTime()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d H:i:s');
 
         echo json_encode([
             "status" => "success",
@@ -126,15 +154,19 @@ if (isset($_POST['energyconsumption'])) {
             ]
         ]);
 
-        mysqli_close($conn);
         exit;
 
+    } catch (MongoException $e) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "MongoDB Error: " . $e->getMessage()
+        ]);
+        exit;
     } catch (Exception $e) {
         echo json_encode([
             "status" => "error",
             "message" => $e->getMessage()
         ]);
-        mysqli_close($conn);
         exit;
     }
 }

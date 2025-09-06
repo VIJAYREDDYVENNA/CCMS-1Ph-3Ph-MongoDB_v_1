@@ -60,9 +60,9 @@ require_once '../config_db/config.php';
                 </div>
             </div>
             <?php
-            $phase = "";
+            /*$phase = "";
             include_once("../common-files/fetch-device-phase.php");
-            $phase = $device_phase;
+            $phase = $device_phase;*/
             ?>
             <?php
             include(BASE_PATH . "dropdown-selection/group-device-list.php");

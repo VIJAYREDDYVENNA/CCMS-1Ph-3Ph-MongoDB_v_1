@@ -1,6 +1,6 @@
 <?php
 
-if(trim($r['signal_level']) != "")  // Check if signal_level is not an empty string
+if(isset($r['signal_level']) && trim($r['signal_level']) != "")  // Check if signal_level is not an empty string
 {
 	$input = $r['signal_level'];
 
@@ -17,54 +17,53 @@ if(trim($r['signal_level']) != "")  // Check if signal_level is not an empty str
 
 //$r['date_time']= $r['date_time']->toDateTime()->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
 if (isset($r['date_time'])) {
-    if ($r['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
-        $dt = $r['date_time']->toDateTime();
-    } else {
+	if ($r['date_time'] instanceof MongoDB\BSON\UTCDateTime) {
+		$dt = $r['date_time']->toDateTime();
+	} else {
         $dt = new DateTime($r['date_time']); // if it's already string
     }
 
     $r['date_time'] = $dt->modify('+5 hours 30 minutes')->format("Y-m-d H:i:s");
 } else {
-    $r['date_time'] = null;
+	$r['date_time'] = null;
 }
+$f1 = (!empty(trim($r['device_id'] ?? ""))) ? $r['device_id'] : "--";
 
+$f2 = $r['date_time']        ?? "--";
+$f3 = $r['voltage_ph1']      ?? "--";
+$f4 = $r['voltage_ph2']      ?? "--";
+$f5 = $r['voltage_ph3']      ?? "--";
+$f6 = $r['current_ph1']      ?? "--";
+$f7 = $r['current_ph2']      ?? "--";
+$f8 = $r['current_ph3']      ?? "--";
 
-$f1 = $r['device_id'];
-$f2 = $r['date_time'];
-$f3 = $r['voltage_ph1'];
-$f4 = $r['voltage_ph2'];
-$f5 = $r['voltage_ph3'];
-$f6 = $r['current_ph1'];
-$f7 = $r['current_ph2'];
-$f8 = $r['current_ph3'];
+$f11 = $r['powerfactor_ph1'] ?? "--";
+$f12 = $r['powerfactor_ph2'] ?? "--";
+$f13 = $r['powerfactor_ph3'] ?? "--";
 
+$f18 = $r['frequency_ph1']   ?? "--";
+$f19 = $r['frequency_ph2']   ?? "--";
+$f20 = $r['frequency_ph3']   ?? "--";
 
+$ff1 = $GLOBALS['firstPart'] ?? "--";
+$ff2 = $GLOBALS['secondPart']?? "--";
+$ff3 = $r['location']        ?? "--";
 
-$f11 = $r['powerfactor_ph1'];
-$f12 = $r['powerfactor_ph2'];
-$f13 = $r['powerfactor_ph3'];
-$f18 = $r['frequency_ph1'];
-$f19 = $r['frequency_ph2'];
-$f20 = $r['frequency_ph3'];
+$kw_1      = $r['kw_1']      ?? "--";
+$kw_2      = $r['kw_2']      ?? "--";
+$kw_3      = $r['kw_3']      ?? "--";
+$kw_total  = $r['kw_total']  ?? "--";
 
+$kva_1     = $r['kva_1']     ?? "--";
+$kva_2     = $r['kva_2']     ?? "--";
+$kva_3     = $r['kva_3']     ?? "--";
+$kva_total = $r['kva_total'] ?? "--";
 
-$ff1=  $GLOBALS['firstPart'];
-$ff2 =  $GLOBALS['secondPart'];
-$ff3 = $r['location'];
+$energy_kwh_total  = $r['energy_kwh_total']  ?? "--";
+$energy_kvah_total = $r['energy_kvah_total'] ?? "--";
 
-$kw_1 = $r['kw_1'];
-$kw_2 = $r['kw_2'];
-$kw_3 = $r['kw_3'];
-$kw_total = $r['kw_total'];
-$kva_1 = $r['kva_1'];
-$kva_2 = $r['kva_2'];
-$kva_3 = $r['kva_3'];
-$kva_total = $r['kva_total'];
-
-
-$energy_kwh_total = $r['energy_kwh_total'];
-$energy_kvah_total = $r['energy_kvah_total'];
-$contactor_status = $r['contactor_status'];
+$contactor_status  = $r['contactor_status']  ?? "--";
+$on_off_status     = $r['on_off_status']     ?? "--";
 if ($contactor_status == "1")
 {
 	$contactor_status="ON";
@@ -75,7 +74,7 @@ else
 	$contactor_status="OFF";
 	$class_contactor_status=$red;
 }
-$on_off_status = $r['on_off_status'];
+//$on_off_status = $r['on_off_status'];
 
 
 if ($on_off_status == "1")
@@ -178,7 +177,6 @@ if($phase=="3PH")
 	<td > $ff2  </td>
 	<td >";
 }
-
 else if($phase=="1PH" && $selected_phase =="1PH" && $selection =="ALL")
 {
 	$data.= "<tr >
@@ -274,4 +272,6 @@ else
 } 
 
 $data.= "</td></tr>";
+
+
 ?>
