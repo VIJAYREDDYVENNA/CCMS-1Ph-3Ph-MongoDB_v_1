@@ -16,7 +16,7 @@ $user_name = $sessionVars['user_name'];
 $user_email = $sessionVars['user_email'];
 $user_type = $sessionVars['user_type'];
 
-$response = ["data" => "", "totalPages" => ""];
+$response = ["data" => "", "totalPages" => 0, "totalRecords" => 0];
 
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
     $page = filter_input(INPUT_GET, 'page', FILTER_SANITIZE_NUMBER_INT);
@@ -25,9 +25,8 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 
     $page = $page ? intval($page) : 1;
     $limit = $limit ? intval($limit) : 20;
+    $limit = max(1, min(500, $limit)); // Ensure limit is between 1 and 500
     $offset = ($page - 1) * $limit;
-
-  
 
     $filter = [];
 
@@ -75,6 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         }
     }
 
+    // Get total record count for pagination
     $totalRecords = $user_db_conn->login_details->countDocuments($filter);
     $totalPages = ceil($totalRecords / $limit);
 
@@ -86,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 
     $cursor = $user_db_conn->login_details->find($filter, $options);
 
-    // Construct table headers dynamically based on role (like in MySQL code)
+    // Construct table headers dynamically based on role
     $data = "<thead>
         <tr>
         <th class='table-header-row-1'>Name</th>
@@ -105,7 +105,9 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
         </tr>
     </thead> <tbody>";
 
+    $recordCount = 0;
     foreach ($cursor as $row) {
+        $recordCount++;
         $status = $row['account_delete'] == 0 ? "<span class='text-danger'>DELETED</span>" : ($row['status'] ?? '');
         $data .= "<tr>
             <td>{$row['name']}</td>
@@ -147,6 +149,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
             </button>
              <button type='button' class='list-group-item list-group-item-action text-primary' onclick='account_action(\"{$row['id']}\", \"{$row['mobile_no']}\", \"{$row['name']}\")'>
             <i class='bi bi-person-lines-fill pe-1'></i><strong>Account Action</strong>
+            </button>
             </div>
             </ul>
             </div>
@@ -156,7 +159,15 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
 
     $data .= "</tbody>";
 
-    $response = ['data' => $data, 'totalPages' => $totalPages];
+    // Enhanced response with pagination info
+    $response = [
+        'data' => $data, 
+        'totalPages' => $totalPages,
+        'totalRecords' => $totalRecords,
+        'currentPage' => $page,
+        'itemsPerPage' => $limit,
+        'recordsOnThisPage' => $recordCount
+    ];
 
     header('Content-Type: application/json');
     echo json_encode($response);
@@ -169,3 +180,4 @@ function sanitize_input($data, $conn)
     $data = htmlspecialchars($data);
     return $data; // Not needed for MongoDB anymore
 }
+?>

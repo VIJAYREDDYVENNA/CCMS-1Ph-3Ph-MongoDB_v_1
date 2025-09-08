@@ -13,26 +13,41 @@ $user_devices = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["group_id"])) {
     $group_id = $_POST['group_id'];
+    
+    // Get pagination parameters
+    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
+    $limit = isset($_POST['limit']) ? (int)$_POST['limit'] : 20;
+    $skip = ($page - 1) * $limit;
+    
     include_once(BASE_PATH_1 . "common-files/selecting_group_device.php");
     
-   $user_devices_array = [];
-if (!empty($user_devices)) {
-    // remove leading/trailing quotes and split by "','"
-    $user_devices_raw = trim($user_devices, "'");
-    $user_devices_array = array_map('trim', explode("','", $user_devices_raw));
-}
+    $user_devices_array = [];
+    if (!empty($user_devices)) {
+        // remove leading/trailing quotes and split by "','"
+        $user_devices_raw = trim($user_devices, "'");
+        $user_devices_array = array_map('trim', explode("','", $user_devices_raw));
+    }
 
     try {
         $electricians = [];
         $unassigned_devices = [];
         $group_areas = [];
         $group_by = null;
+        $total_count = 0;
         
         if ($group_id === "ALL") {
-            // Fetch electricians
+            // Get total count first
             if (!empty($user_devices_array)) {
+                $total_count = $user_db_conn->electrician_devices->countDocuments([
+                    'device_id' => ['$in' => $user_devices_array]
+                ]);
+
+                // Fetch electricians with pagination
                 $electricians_cursor = $user_db_conn->electrician_devices->find([
                     'device_id' => ['$in' => $user_devices_array]
+                ], [
+                    'skip' => $skip,
+                    'limit' => $limit
                 ]);
 
                 foreach ($electricians_cursor as $doc) {
@@ -45,7 +60,7 @@ if (!empty($user_devices)) {
                 }
             }
 
-            // Assigned devices for this user
+            // Assigned devices for this user (for unassigned devices calculation)
             $assigned_devices_cursor = $user_db_conn->electrician_devices->find([
                 'user_login_id' => (int)$user_login_id
             ], [
@@ -85,7 +100,6 @@ if (!empty($user_devices)) {
             foreach ($unassigned_cursor as $doc) {
                 $unassigned_devices[] = [
                     "device_id" => $doc["device_id"] ?? '',
-                    // ✅ Only add if exists
                     "device_name" => $doc["c_device_name"] ?? 'Unknown'
                 ];
             }
@@ -118,14 +132,22 @@ if (!empty($user_devices)) {
                 }
             }
 
-            // Fetch electricians for this group
+            // Build electrician filter
+            $electrician_filter = [];
             if (!empty($user_devices_array)) {
-                $electrician_filter = [
-                    'device_id' => ['$in' => $user_devices_array]
-                ];
-                $electrician_filter['group_area'] = !empty($group_areas) ? ['$in' => $group_areas] : $group_id;
+                $electrician_filter['device_id'] = ['$in' => $user_devices_array];
+            }
+            $electrician_filter['group_area'] = !empty($group_areas) ? ['$in' => $group_areas] : $group_id;
 
-                $electricians_cursor = $user_db_conn->electrician_devices->find($electrician_filter);
+            // Get total count
+            $total_count = $user_db_conn->electrician_devices->countDocuments($electrician_filter);
+
+            // Fetch electricians for this group with pagination
+            if (!empty($user_devices_array)) {
+                $electricians_cursor = $user_db_conn->electrician_devices->find($electrician_filter, [
+                    'skip' => $skip,
+                    'limit' => $limit
+                ]);
 
                 foreach ($electricians_cursor as $doc) {
                     $electricians[] = [
@@ -177,13 +199,13 @@ if (!empty($user_devices)) {
             }
         }
 
+        // SIMPLE RESPONSE - ONLY ELECTRICIANS AND BASIC PAGINATION INFO
         echo json_encode([
-            "user_devicesnotarray" => $user_devices,
-            "user_devices[]" => $user_devices_array,
-            "group_by" => $group_by,
-            "group_areas" => $group_areas,
             "electricians" => $electricians,
-            "unassigned_devices" => $unassigned_devices,
+            "total_count" => $total_count,
+            "current_page" => $page,
+            "items_per_page" => $limit,
+            "total_pages" => ceil($total_count / $limit)
         ]);
 
     } catch (Exception $e) {
@@ -195,3 +217,4 @@ if (!empty($user_devices)) {
 } else {
     echo json_encode([]);
 }
+?>

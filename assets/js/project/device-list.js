@@ -54,18 +54,21 @@ function refresh_data() {
 
 
 
-var itemsPerPage=20;
+var itemsPerPage = 20;
 document.getElementById('items-per-page').addEventListener("change", function () {
     itemsPerPage = document.getElementById('items-per-page').value;
-    // localStorage.setItem("itmPerPage", itemsPerPage);
+    // Show preloader when items per page changes
+    $("#pre-loader").css('display', 'block');
     add_device_list(group_name, 1, itemsPerPage);
-    // console.log(itemsPerPage);
 });
-var pageNumber=1;
+
+var pageNumber = 1;
+
 function add_device_list(group_id, page = 1, itemsPerPage = 20) {
-// console.log(localStorage.getItem("itmPerPage"));
-// console.log(itemsPerPage);
     if (group_id !== "" && group_id !== null) {
+        // Show preloader at the start of function
+        $("#pre-loader").css('display', 'block');
+        
         $.ajax({
             type: "POST",
             url: '../device-list/code/device-list-table.php',
@@ -78,78 +81,85 @@ function add_device_list(group_id, page = 1, itemsPerPage = 20) {
                 device_list_table.innerHTML = '';
                 pagination.empty();
 
-
                 if (Object.keys(data).length) {
                     const sortedData = data.sort(function (a, b) {
                         return b.ACTIVE_STATUS - a.ACTIVE_STATUS;
                     });
 
-
-                    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-
+                    const totalRecords = sortedData.length;
+                    const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
                     const startIndex = (page - 1) * itemsPerPage;
                     const endIndex = startIndex + itemsPerPage;
                     const paginatedData = sortedData.slice(startIndex, endIndex);
 
                     paginatedData.forEach(function (row) {
-
                         var newRow = document.createElement('tr');
                         newRow.innerHTML =
-                        '<td>' + row.D_ID + '</td>' +
-                        '<td>' + row.D_NAME + '</td>' +
-                        '<td>' + row.INSTALLED_STATUS + '</td>' +
-                        '<td>' + row.INSTALLED_DATE + '</td>' +
-                        '<td>' + row.KW + '</td>' +
-                        '<td class="col-size-1">' + row.DATE_TIME + '</td>' +
-                        '<td>' + row.ON_OFF_STATUS + '</td>' +
-                        '<td>' + row.OPERATION_MODE + '</td>' +
-                        '<td>' + row.WORKING_STATUS + '</td>' +
-                        '<td>' + row.LMARK + '</td>' +
-                        '<td>' + row.INSTALLED_LIGHTS + '</td>' +
-                        '<td>' +
-                        '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + row.REMOVE + '\')"></i>' +
-                        '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + row.D_ID + '\', \'' + row.D_NAME + '\')"></i>' +
-                        '</td>';
+                            '<td>' + row.D_ID + '</td>' +
+                            '<td>' + row.D_NAME + '</td>' +
+                            '<td>' + row.INSTALLED_STATUS + '</td>' +
+                            '<td>' + row.INSTALLED_DATE + '</td>' +
+                            '<td>' + row.KW + '</td>' +
+                            '<td class="col-size-1">' + row.DATE_TIME + '</td>' +
+                            '<td>' + row.ON_OFF_STATUS + '</td>' +
+                            '<td>' + row.OPERATION_MODE + '</td>' +
+                            '<td>' + row.WORKING_STATUS + '</td>' +
+                            '<td>' + row.LMARK + '</td>' +
+                            '<td>' + row.INSTALLED_LIGHTS + '</td>' +
+                            '<td>' +
+                            '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + row.REMOVE + '\')"></i>' +
+                            '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + row.D_ID + '\', \'' + row.D_NAME + '\')"></i>' +
+                            '</td>';
                         device_list_table.appendChild(newRow);
                     });
 
-                    // ✅ Render pagination
-                    pagination_fun(pagination, totalPages, page);
+                    // Render pagination with record count
+                    pagination_fun(pagination, totalPages, page, totalRecords, itemsPerPage);
 
-                    // ✅ Bind click event for pagination buttons
+                    // Bind click event for pagination buttons with preloader
                     pagination.off("click").on("click", ".page-link", function (e) {
                         e.preventDefault();
+                        // Show preloader when pagination button is clicked
+                        $("#pre-loader").css('display', 'block');
                         const newPage = $(this).data("page");
-                        pageNumber=newPage;
+                        pageNumber = newPage;
                         add_device_list(group_id, parseInt(pageNumber), parseInt(itemsPerPage));
-                    //   console.log(pageNumber,parseInt(itemsPerPage));
                     });
 
                 } else {
                     var newRow = document.createElement('tr');
                     newRow.innerHTML = '<td class="text-danger" colspan="12">Device List not found</td>';
                     device_list_table.appendChild(newRow);
+                    
+                    // Clear record count when no data
+                    updateRecordCount(0, 0, 0);
                 }
+                
+                // Hide preloader after successful data load
                 $("#pre-loader").css('display', 'none');
             },
             error: function () {
+                // Hide preloader on error
+                $("#pre-loader").css('display', 'none');
                 error_message_text.textContent = "Error getting the data";
                 error_toast.show();
-                $("#pre-loader").css('display', 'none');
             },
             failure: function () {
+                // Hide preloader on failure
+                $("#pre-loader").css('display', 'none');
                 error_message_text.textContent = "Failed to get the data";
                 error_toast.show();
-                $("#pre-loader").css('display', 'none');
             }
         });
+    } else {
+        // Hide preloader if group_id is invalid
+        $("#pre-loader").css('display', 'none');
     }
 }
 
-
-function pagination_fun(pagination, totalPages, page) {
-    page=Number(page);
+function pagination_fun(pagination, totalPages, page, totalRecords, itemsPerPage) {
+    page = Number(page);
 
     const maxPagesToShow = 5;
     const windowSize = Math.floor(maxPagesToShow / 2);
@@ -167,50 +177,71 @@ function pagination_fun(pagination, totalPages, page) {
     // Add "First" button
     if (page > 1) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="1">First</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="1">First</a>
+            </li>
         `);
     }
 
     // Add "Previous" button
     if (page > 1) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
+            </li>
         `);
     }
 
     // Add page number buttons
     for (let i = startPage; i <= endPage; i++) {
-
         pagination.append(`
-      <li class="page-item ${i === page ? 'active' : ''}">
-      <a class="page-link" href="#" data-page="${i}">${i}</a>
-      </li>
+            <li class="page-item ${i === page ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
         `);
     }
 
     // Add "Next" button
     if (page < totalPages) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="${page + 1}">Next</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page + 1}">Next</a>
+            </li>
         `);
     }
 
     // Add "Last" button
     if (page < totalPages) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="${totalPages}">Last</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${totalPages}">Last</a>
+            </li>
         `);
+    }
+
+    // Update record count display
+    updateRecordCount(page, itemsPerPage, totalRecords);
+}
+
+// Function to update record count display
+function updateRecordCount(currentPage, itemsPerPage, totalRecords) {
+    const rangeInfo = document.getElementById('device-list-range-info');
+    
+    if (rangeInfo && totalRecords > 0) {
+        const startRecord = (currentPage - 1) * itemsPerPage + 1;
+        const endRecord = Math.min(currentPage * itemsPerPage, totalRecords);
+        
+        rangeInfo.textContent = `${startRecord}-${endRecord} of ${totalRecords}`;
+    } else if (rangeInfo) {
+        rangeInfo.textContent = '0-0 of 0';
     }
 }
 
+// Optional: Function to manually trigger device list refresh with preloader
+function refreshDeviceList() {
+    $("#pre-loader").css('display', 'block');
+    add_device_list(group_name, pageNumber, itemsPerPage);
+}
 
 document.getElementById('newdeviceName').addEventListener('input', function () {
     var oldDeviceName = document.getElementById('olddeviceName').value;

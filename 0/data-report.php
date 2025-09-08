@@ -109,7 +109,7 @@ SessionManager::checkSession();
 										<div class="col-auto">
 											<label for="items-per-page" class="form-label">Items per page:</label>
 										</div>
-										<div class="col-auto">
+										<div class="col-auto d-flex justify-content-center flex-row">
 											<select id="items-per-page" class="form-select">
 												<option value="10">10</option>
 												<option value="20" selected>20</option>
@@ -117,7 +117,12 @@ SessionManager::checkSession();
 												<option value="100">100</option>
 												
 											</select>
+											
+											<div class="col-auto m-2">
+												<span id="record-count-display" class="text-muted small"></span>
+											</div>
 										</div>
+										
 									</div>
 
 								</div>

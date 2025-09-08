@@ -44,6 +44,9 @@
                                             <option value="200">200</option>
                                         </select>
                                     </div>
+                                    <div class="col-auto">
+                                        <span id="record-count-install" class="text-muted small"></span>
+                                    </div>
                                 </div>
 
                             </div>

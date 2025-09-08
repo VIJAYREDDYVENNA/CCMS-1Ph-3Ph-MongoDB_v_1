@@ -271,7 +271,7 @@ SessionManager::checkSession();
                                                 <p class="text-muted mb-3">Total CCMS Devices</p>
                                                 <div class="row g-2">
                                                     <div class="col-6">
-                                                        <div class="p-2 bg-success bg-opacity-10 rounded cursor-pointer" onclick="activeModal()">
+                                                        <div class="p-2 bg-success bg-opacity-10 rounded cursor-pointer"  id="active_device_list">
                                                             <h4 id="ccms-on" class="text-success-emphasis mb-0">--</h4>
                                                             <small>Active</small>
                                                         </div>
@@ -444,6 +444,7 @@ SessionManager::checkSession();
     <script src="<?php echo BASE_PATH; ?>assets/js/sidebar-menu.js"></script>
     <script src="<?php echo BASE_PATH; ?>assets/js/project/map.js"></script>
     <script src="<?php echo BASE_PATH; ?>assets/js/project/device-dashboard.js"></script>
+
 
     <?php
     include(BASE_PATH . "assets/html/body-end.php");

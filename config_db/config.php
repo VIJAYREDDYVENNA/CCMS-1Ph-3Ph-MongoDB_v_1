@@ -1,5 +1,8 @@
 <?php
 
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+ini_set('display_errors', 0);
+
 /*$ip_address = $_SERVER['REMOTE_ADDR'];
 
 if($ip_address=="::1")
@@ -28,22 +31,23 @@ use MongoDB\Client;
 use MongoDB\Exception\ConnectionTimeoutException;
 use MongoDB\Operation\Find;
 
-$client = new Client("mongodb://Mongoadmin:istl_123456@216.48.182.199:27017/?appname=myapp&maxPoolSize=50");
-//$client = new Client("mongodb://Mongoadmin:istl_123456@103.101.59.93:27017/?appname=myapp&maxPoolSize=50");
-$devices_db_conn = $client->ccms_data;
-$user_db_conn = $client->ccms_user_db;
+try {
 
-/*$login_collection = $user_db_conn->login_details; 
+	// $client = new Client("mongodb://Mongoadmin:istl_123456@216.48.182.199:27017/?appname=myapp&maxPoolSize=50");
+	$client = new Client("mongodb://Mongoadmin:istl_123456@103.101.59.93:27017/?appname=myapp&maxPoolSize=50");
 
-$r = $login_collection->findOne([
-    '$or' => [
-        ['mobile_no' => "12"],
-        ['email_id'  => "12"],
-        ['user_id'   => "12"]
-    ]
-]);
+	$client->ccms_data->command(['ping' => 1]);
+	$devices_db_conn = $client->ccms_data;
+	$user_db_conn = $client->ccms_user_db;
+} catch (Exception $e) {
+	http_response_code(500); 
+	echo json_encode([
+		"status"  => "error",
+		"message" => "Database connection failed",
 
-var_dump($r);*/
+	]);
+	exit;
+}
 
 
 ?>

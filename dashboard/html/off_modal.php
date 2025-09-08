@@ -24,6 +24,41 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="col-12 p-0">
+                        <div class="pagination-wrapper mt-2">
+                            <div class="row">
+                                <div class="col">
+                                    <div class="row g-2 align-items-center d-flex">
+                                        <div class="col-auto">
+                                            <label for="items-per-page-off" class="form-label">Items per page:</label>
+                                        </div>
+                                        <div class="col-auto">
+                                            <select id="items-per-page-off" class="form-select">
+                                                <option value="10">10</option>
+                                                <option value="20" selected>20</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                                <option value="200">200</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-auto">
+                                            <span id="record-count-off" class="text-muted small"></span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="col">
+                                    <div class="pagination-container">
+                                        <nav>
+                                            <ul class="pagination justify-content-end " id="pagination-off">
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

@@ -62,6 +62,13 @@ if (count($phases) == 2) {
 // Fetch the total count of rows before querying the actual data
 $rowCount = $collection->countDocuments(['device_id' => ['$in' => $device_ids_array]]);
 
+// Calculate total pages
+$totalPages = ceil($rowCount / $recordsPerPage);
+
+// Calculate start and end record numbers for current page
+$startRecord = $rowCount > 0 ? ($skip + 1) : 0;
+$endRecord = min($skip + $recordsPerPage, $rowCount);
+
 // Fetch the data with pagination
 $cursor = $collection->find(
     ['device_id' => ['$in' => $device_ids_array]],
@@ -100,14 +107,16 @@ foreach ($cursor as $r) {
 
 $selected_phase = $selected_phase1;
 
-// Calculate total pages
-$totalPages = ceil($rowCount / $recordsPerPage);
-
-// Send the response with row count, data, and pagination details
+// Send the response with row count, data, pagination details, and record range
 echo json_encode(array(
     'data' => $data,
     'selected_phase' => $selected_phase,
     'rowCount' => $rowCount,
-    'totalPages' => $totalPages
+    'totalPages' => $totalPages,
+    'currentPage' => $pageNumber,
+    'recordsPerPage' => $recordsPerPage,
+    'startRecord' => $startRecord,
+    'endRecord' => $endRecord,
+    'recordRange' => $rowCount > 0 ? "{$startRecord}-{$endRecord} of {$rowCount}" : "0 of 0"
 ));
 ?>
