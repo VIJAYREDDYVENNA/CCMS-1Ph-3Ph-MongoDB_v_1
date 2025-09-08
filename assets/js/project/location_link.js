@@ -6,8 +6,8 @@ function show_location(location)
 		const myLocation_center = location.split(",");
 		var loc_lat=myLocation_center[0].trim();
 		var loc_long=myLocation_center[1].trim();
-		loc_lat= ddm_to_dd( loc_lat);
-		loc_long= ddm_to_dd( loc_long);
+		//loc_lat= ddm_to_dd( loc_lat);
+		//loc_long= ddm_to_dd( loc_long);
 
 		var location ="https://www.google.co.in/maps?q="+loc_lat+","+loc_long;	
 		window.open(location, "_blank");
