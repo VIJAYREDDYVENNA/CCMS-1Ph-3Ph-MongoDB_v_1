@@ -69,20 +69,22 @@
                             </div>
                             <div class="col-auto">
                                 <select id="items-per-page" class="form-select">
-                                    <option value="100"selected>100</option>
-                                    <option value="200" >200</option>
+                                    <option value="100" selected>100</option>
+                                    <option value="200">200</option>
                                     <option value="300">300</option>
                                     <option value="500">500</option>
                                     <option value="1000">1000</option>
                                 </select>
                             </div>
+                            <div class="col-auto">
+                                <span id="sim-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
+                            </div>
                         </div>
-
                     </div>
                     <div class="col">
                         <div class="pagination-container">
                             <nav>
-                                <ul class="pagination justify-content-end " id="pagination">
+                                <ul class="pagination justify-content-end" id="pagination">
                                 </ul>
                             </nav>
                         </div>
@@ -90,13 +92,9 @@
                 </div>
             </div>
         </div>
-
     </div>
     </div>
 
-    <script>
-
-    </script>
     <script src="<?php echo BASE_PATH; ?>assets/js/sidebar-menu.js"></script>
     <script src="<?php echo BASE_PATH; ?>assets/js/project/sim-card-details.js"></script>
     <script src="<?php echo BASE_PATH; ?>sim-card-details/js/search-bar.js"></script>
