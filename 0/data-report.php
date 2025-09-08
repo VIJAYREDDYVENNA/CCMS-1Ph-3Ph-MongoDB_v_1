@@ -5,10 +5,11 @@ SessionManager::checkSession();
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="auto">
+
 <head>
-	<title>Data report</title> 
+	<title>Data report</title>
 	<?php
-	include(BASE_PATH."assets/html/start-page.php");
+	include(BASE_PATH . "assets/html/start-page.php");
 	?>
 	<div class="d-flex flex-column flex-shrink-0 p-3 main-content ">
 		<div class="container-fluid">
@@ -18,10 +19,10 @@ SessionManager::checkSession();
 				</div>
 			</div>
 			<?php
-			include(BASE_PATH."dropdown-selection/group-device-list.php");
+			include(BASE_PATH . "dropdown-selection/group-device-list.php");
 			?>
 			<div class="row">
-				
+
 				<div class="col-12 p-0">
 
 					<div class="container-fluid text-center p-0 mt-3">
@@ -92,8 +93,10 @@ SessionManager::checkSession();
 
 								</tr> -->
 							</thead>
-							<tbody id="frame_data_table">	
-								<tr><td colspan="75" class="text-danger">Record Not Found </td> </tr>
+							<tbody id="frame_data_table">
+								<tr>
+									<td colspan="75" class="text-danger">Record Not Found </td>
+								</tr>
 
 							</tbody>
 						</table>
@@ -115,14 +118,17 @@ SessionManager::checkSession();
 												<option value="20" selected>20</option>
 												<option value="50">50</option>
 												<option value="100">100</option>
-												
+
 											</select>
+										</div>
+										<div class="col-auto">
+											<span id="data-report-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
 										</div>
 									</div>
 
 								</div>
 								<div class="col">
-									<div class="pagination-container" >
+									<div class="pagination-container">
 										<nav>
 											<ul class="pagination justify-content-end " id="pagination-controls">
 											</ul>
@@ -137,10 +143,10 @@ SessionManager::checkSession();
 			</div>
 		</div>
 	</div>
-</main>
-<script src="<?php echo BASE_PATH;?>assets/js/sidebar-menu.js"></script>
-<script src="<?php echo BASE_PATH;?>assets/js/project/data-report.js"></script>
-<?php
-include(BASE_PATH."assets/html/body-end.php");
-include(BASE_PATH."assets/html/html-end.php");
-?>
+	</main>
+	<script src="<?php echo BASE_PATH; ?>assets/js/sidebar-menu.js"></script>
+	<script src="<?php echo BASE_PATH; ?>assets/js/project/data-report.js"></script>
+	<?php
+	include(BASE_PATH . "assets/html/body-end.php");
+	include(BASE_PATH . "assets/html/html-end.php");
+	?>
