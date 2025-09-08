@@ -41,7 +41,7 @@ $user_login_id = $sessionVars['user_login_id'];
             /* Consistent padding */
         }
 
-  
+
 
         /* Style for dropdown menus */
         .dropdown-menu-user-list {
@@ -76,7 +76,7 @@ $user_login_id = $sessionVars['user_login_id'];
         }
 
         /* Set a shade for action column when scrolling */
-      
+
 
         /* Make dropdown open to the left rather than right */
         .dropend .dropdown-menu {
@@ -99,7 +99,7 @@ $user_login_id = $sessionVars['user_login_id'];
             </div>
             <div class="row">
                 <div class="container mt-2 p-0">
-                    <div class="row justify-content-end align-items-center mt-2 ">
+                    <div class="row justify-content-end align-items-center mt-2">
                         <div class="col-auto mb-2 p-0">
                             <div class="input-group">
                                 <input type="text" class="form-control" placeholder="Search..." id="searchInput">
@@ -116,8 +116,6 @@ $user_login_id = $sessionVars['user_login_id'];
                 <div class="col-12 p-0">
                     <div class="table-responsive rounded mt-2 border">
                         <table class="table table-striped styled-table table-sticky-header table-type-1 w-100 text-center resulttable" id="user_list_table">
-
-
                         </table>
                     </div>
 
@@ -134,16 +132,18 @@ $user_login_id = $sessionVars['user_login_id'];
                                             <option value="20" selected>20</option>
                                             <option value="50">50</option>
                                             <option value="100">100</option>
-                                            <option value="100">200</option>
+                                            <option value="200">200</option>
                                         </select>
                                     </div>
+                                    <div class="col-auto">
+                                        <span id="user-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
+                                    </div>
                                 </div>
-
                             </div>
                             <div class="col">
                                 <div class="pagination-container">
                                     <nav>
-                                        <ul class="pagination justify-content-end " id="pagination">
+                                        <ul class="pagination justify-content-end" id="pagination">
                                         </ul>
                                     </nav>
                                 </div>
