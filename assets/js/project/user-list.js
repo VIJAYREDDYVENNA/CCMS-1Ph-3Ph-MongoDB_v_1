@@ -552,7 +552,7 @@ function devicehandleSearch() {
     }
 }
 
-// Modified version of fetchUserDevices to maintain selections
+// Modified fetchUserDevices function to include record count updates
 function fetchUserDevices(userid_devices, page, limit, search_device) {
     $("#pre-loader").css('display', 'block');
     $.ajax({
@@ -1099,8 +1099,8 @@ function fetchAdminDevices(userid_devices, page, limit, search_device) {
             const totalPages = response.totalPages;
             const totalRecords = response.totalRecords || 0;
             
-            // Update record count display for admin devices
-            updateDeviceRecordCount(page, limit, totalRecords, 'admin-devices-record-count');
+            // Update record count display for admin devices - Fixed with correct ID!
+            updateDeviceRecordCount(page, limit, totalRecords, 'admin-add-devices-record-count');
             
             pagination_fun(pagination, totalPages, page);
             

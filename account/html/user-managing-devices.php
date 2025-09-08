@@ -148,7 +148,7 @@
                                             </select>
                                         </div>
                                         <div class="col-auto">
-                                            <span id="admin-devices-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
+                                            <span id="admin-add-devices-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
                                         </div>
                                     </div>
                                 </div>
