@@ -109,6 +109,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 			}*/
 			$google_location = "https://www.google.co.in/maps?q=" . $coordinates;
 		}
+		else
+		{
+			$google_location = "https://www.google.co.in/maps?q=0,0";
+		}
 
     // --- on/off logic ---
 		if ($on_off_status == 1 || $on_off_status == 3 || $on_off_status == 4) {
