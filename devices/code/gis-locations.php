@@ -96,14 +96,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 		if (isset($r['location']) && $r['location'] != '0,0' && strpos($r['location'], "0000000,000000") === false) {
 			$coordinates = $r['location'];
 			$co_array = explode(',', $coordinates);
-			if (!empty($co_array[0]) && !empty($co_array[1])) {
+
+			$lat = (double)$co_array[0];
+			$long = (double)$co_array[1];
+
+			/*if (!empty($co_array[0]) && !empty($co_array[1])) {
 				try {
-					$lat = convert_DMS_DD($co_array[0]);
-					$long = convert_DMS_DD($co_array[1]);
+					$lat = (double)(trim($co_array[0]));
+					$long = (double)(trim($co_array[1]));
 					$coordinates = $lat . "," . $long;
 				} catch (Exception $e) {}
-			}
+			}*/
 			$google_location = "https://www.google.co.in/maps?q=" . $coordinates;
+		}
+		else
+		{
+			$google_location = "https://www.google.co.in/maps?q=0,0";
 		}
 
     // --- on/off logic ---
