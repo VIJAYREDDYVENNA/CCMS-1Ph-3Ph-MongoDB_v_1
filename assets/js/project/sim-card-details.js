@@ -6,7 +6,6 @@ let success_message_text = document.getElementById('success-message-text');
 const error_toast = bootstrap.Toast.getOrCreateInstance(error_message);
 const success_toast = bootstrap.Toast.getOrCreateInstance(success_message);
 
-
 var group_name = localStorage.getItem("GroupNameValue")
 if (group_name == "" || group_name == null) {
     group_name = "ALL";
@@ -21,17 +20,10 @@ group_list.addEventListener('change', function () {
     if (group_name !== "" && group_name !== null) {
         $("#pre-loader").css('display', 'block');
         add_sim_list(group_name);
-
     }
 });
 
-//setTimeout(refresh_data, 50);
-// setInterval(refresh_data, 20000);
 function refresh_data() {
-    /*if (typeof update_frame_time === "function") {
-        device_id = document.getElementById('device_id').value;
-        update_frame_time(device_id);
-    } */
     let group_name = group_list.value;
     if (group_name !== "" && group_name !== null) {
         add_sim_list(group_name);
@@ -48,7 +40,6 @@ document.getElementById('items-per-page').addEventListener('change', function ()
 });
 
 function add_sim_list(group_id, currentPage = 1, itemsPerPage = 100) {
-
     if (group_id !== "" && group_id !== null) {
         $.ajax({
             type: "POST",
@@ -63,8 +54,15 @@ function add_sim_list(group_id, currentPage = 1, itemsPerPage = 100) {
             success: function (response) {
                 const sim_list_table = document.getElementById('sim_list_table');
                 sim_list_table.innerHTML = ''; // Clear the table
-                // Pagination controls update
-                updatePaginationControls(Math.ceil(response.total_records / itemsPerPage), currentPage);
+                
+                const totalRecords = response.total_records || 0;
+                const totalPages = Math.ceil(totalRecords / itemsPerPage);
+                
+                // Update pagination controls
+                updatePaginationControls(totalPages, currentPage);
+                
+                // Update record count display
+                updateSimRecordCount(currentPage, itemsPerPage, totalRecords);
 
                 if (response.data && response.data.length > 0) {
                     // Loop through the data and append rows
@@ -102,19 +100,51 @@ function add_sim_list(group_id, currentPage = 1, itemsPerPage = 100) {
     }
 }
 
-
-
+// Function to update SIM card record count display
+function updateSimRecordCount(currentPage, itemsPerPage, totalRecords) {
+    const recordCountElement = document.getElementById('sim-record-count');
+    
+    if (recordCountElement && totalRecords > 0) {
+        const startRecord = (currentPage - 1) * itemsPerPage + 1;
+        const endRecord = Math.min(currentPage * itemsPerPage, totalRecords);
+        recordCountElement.textContent = `${startRecord}-${endRecord} of ${totalRecords}`;
+    } else if (recordCountElement) {
+        recordCountElement.textContent = '0-0 of 0';
+    }
+}
 
 function updatePaginationControls(totalPages, currentPage) {
     const pagination = document.getElementById('pagination');
     pagination.innerHTML = '';  // Clear the pagination controls
 
+    if (totalPages <= 1) {
+        return; // No pagination needed for 1 or 0 pages
+    }
+
+    // First button
+    if (currentPage > 1) {
+        pagination.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">First</a></li>`;
+    }
+
     // Previous button
     let prevDisabled = (currentPage == 1) ? 'disabled' : '';
     pagination.innerHTML += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a></li>`;
 
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
+    // Page numbers (show max 5 pages)
+    const maxPagesToShow = 5;
+    const windowSize = Math.floor(maxPagesToShow / 2);
+    let startPage = Math.max(1, currentPage - windowSize);
+    let endPage = Math.min(totalPages, currentPage + windowSize);
+
+    // Adjust range if we're near the beginning or end
+    if (currentPage - windowSize < 1) {
+        endPage = Math.min(totalPages, endPage + (windowSize - (currentPage - 1)));
+    }
+    if (currentPage + windowSize > totalPages) {
+        startPage = Math.max(1, startPage - (currentPage + windowSize - totalPages));
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
         let activeClass = (i == currentPage) ? 'active' : '';
         pagination.innerHTML += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="changePage(${i})">${i}</a></li>`;
     }
@@ -122,9 +152,18 @@ function updatePaginationControls(totalPages, currentPage) {
     // Next button
     let nextDisabled = (currentPage == totalPages) ? 'disabled' : '';
     pagination.innerHTML += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a></li>`;
+
+    // Last button
+    if (currentPage < totalPages) {
+        pagination.innerHTML += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${totalPages})">Last</a></li>`;
+    }
 }
 
 function changePage(page) {
-    currentPage = page;
-    add_sim_list(group_list.value, currentPage, itemsPerPage);
+    const totalPages = Math.ceil((document.getElementById('sim-record-count').textContent.split(' of ')[1] || 0) / itemsPerPage);
+    
+    if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        add_sim_list(group_list.value, currentPage, itemsPerPage);
+    }
 }

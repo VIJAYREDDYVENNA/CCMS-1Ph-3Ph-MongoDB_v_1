@@ -13,9 +13,9 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="admin-devices-list-tab" data-bs-toggle="tab" data-bs-target="#admin-devices-list" type="button" role="tab" aria-controls="admin-devices-list" aria-selected="false" onclick="addnewDevice()">Add Devices</button>
                     </li>
-
                 </ul>
                 <div class="tab-content" id="myTabContent">
+                    <!-- User Devices Tab -->
                     <div class="tab-pane fade show active" id="user-devices-list" role="tabpanel" aria-labelledby="view-user-devices-list-tab" tabindex="0">
                         <div class="container mt-2 p-0 ">
                             <div class="row justify-content-end align-items-end mt-2 ">
@@ -27,21 +27,13 @@
                                         </button>
                                     </div>
                                 </div>
-                                <?php
-                                if($role=="SUPERADMIN")
-                                {
-                                    ?>
-
-                                    <div class="col-auto  mb-2 ps-1">
-                                        <div class="input-group">
-                                            <button type="button" class="btn btn-primary " onclick="syncToMyAccount()">Devices Sync</button>
-                                        </div>
+                                <?php if($role=="SUPERADMIN") { ?>
+                                <div class="col-auto  mb-2 ps-1">
+                                    <div class="input-group">
+                                        <button type="button" class="btn btn-primary " onclick="syncToMyAccount()">Devices Sync</button>
                                     </div>
-
-                                    <?php
-                                }
-                                ?>
-
+                                </div>
+                                <?php } ?>
                                 <div class="col-auto  mb-2 ps-1">
                                     <div class="input-group">
                                         <button type="button" class="btn btn-danger " onclick="DeleteSelectedDevices()">Delete</button>
@@ -65,7 +57,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="managing_devices_table">
-
                                 </tbody>
                             </table>
                         </div>
@@ -86,8 +77,10 @@
                                                 <option value="200">200</option>
                                             </select>
                                         </div>
+                                        <div class="col-auto">
+                                            <span id="user-devices-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
+                                        </div>
                                     </div>
-
                                 </div>
                                 <div class="col">
                                     <div class="pagination-container ">
@@ -100,6 +93,8 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Admin Devices Tab -->
                     <div class="tab-pane fade" id="admin-devices-list" role="tabpanel" aria-labelledby="admin-devices-list-tab" tabindex="0"> 
                         <div class="container mt-2 p-0 ">
                             <div class="row justify-content-end align-items-end mt-2 ">
@@ -132,7 +127,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="admin-managing_devices_table">
-
                                 </tbody>
                             </table>
                         </div>
@@ -152,6 +146,9 @@
                                                 <option value="100">100</option>
                                                 <option value="200">200</option>
                                             </select>
+                                        </div>
+                                        <div class="col-auto">
+                                            <span id="admin-add-devices-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
                                         </div>
                                     </div>
                                 </div>
@@ -174,4 +171,3 @@
         </div>
     </div>
 </div>
-

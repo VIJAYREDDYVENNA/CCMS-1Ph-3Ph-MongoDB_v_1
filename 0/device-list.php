@@ -91,13 +91,15 @@ $role = $sessionVars['role'];
                                     <option value="200">200</option>
                                 </select>
                             </div>
+                            <div class="col-auto">
+                                <span id="device-list-range-info" class="text-muted small fw-semibold">0-0 of 0</span>
+                            </div>
                         </div>
-
                     </div>
                     <div class="col">
                         <div class="pagination-container">
                             <nav>
-                                <ul class="pagination justify-content-end " id="pagination">
+                                <ul class="pagination justify-content-end" id="pagination">
                                 </ul>
                             </nav>
                         </div>

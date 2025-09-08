@@ -11,39 +11,29 @@ $(document).ready(function () {
             search_user = "";
         }
         fetchData(page, limit, search_user);
-
     });
 
     $('#items-per-page').change(function () {
-
-
         let limit = $(this).val();
         let search_user = document.getElementById("searchInput").value.toLowerCase().trim();
         if (search_user == "" || search_user == null) {
             search_user = "";
         }
-
         fetchData(1, limit, search_user);
     });
 });
+
 function addUser() {
     const modal = new bootstrap.Modal(document.getElementById('adduser'));
     document.getElementById('password').value = "";
-    // var strengthDiv=document.getElementById('passwordStrength');
-    // strengthDiv.textContent = "Password must include: at least 8 characters, an uppercase letter, a lowercase letter, a number, a special character";
-    // strengthDiv.classList.remove("text-success");
-    // strengthDiv.classList.add("text-danger-emphasis");
     modal.show();
 }
 
 function search_users() {
     var search_user = document.getElementById("searchInput").value.toLowerCase().trim();
     var limit = $('#items-per-page').val();
-
-    fetchData(1, limit, search_user)
-
+    fetchData(1, limit, search_user);
 }
-
 
 function fetchData(page, limit, search_user) {
     $("#pre-loader").css('display', 'block');
@@ -55,40 +45,36 @@ function fetchData(page, limit, search_user) {
             let tableBody = $('#user_list_table');
             let pagination = $('#pagination');
             $("#pre-loader").css('display', 'none');
+            
             tableBody.empty();
             pagination.empty();
             tableBody.append(response.data);
-            // Populate table
-            /*response.data.forEach(item => {
-             tableBody.append(`
-              <tr>
-              <td>${item.name}</td>
-              <td>${item.user_id}</td>
-              <td>${item.role}</td>
-              <td>${item.mobile_no}</td>
-              <td>${item.email_id}</td>
-              <td>${item.status}</td>
-              <td>
-              <div class="btn-group dropend p-0 z-3 popup-btn-group" >                                           
-              <button class="btn p-0" type="button" data-bs-toggle="dropdown" style="border:none"><i class="bi bi-three-dots-vertical"></i></button>
-              <ul class="dropdown-menu p-0 border-0" style='width:200px'>
-              <div class="list-group">
-              <button type="button" onclick="editMainTableDetails('${item.id}', '${item.mobile_no}', '${item.name}', this)" class="list-group-item list-group-item-action text-primary" aria-current="true"><i class="bi bi-pen-fill "></i><strong> Edit</strong></button>
-              <button type="button" class="list-group-item list-group-item-action text-danger" onclick="deleteRow('${item.id}', '${item.mobile_no}', '${item.name}', this)"><i class="bi bi-trash-fill"></i><strong> Delete</strong></button>
-              <button type="button" class="list-group-item list-group-item-action text-success-emphasis" onclick="permissionModal('${item.id}', '${item.mobile_no}', '${item.name}')"><i class="bi bi-shield-lock-fill pe-1"></i><strong>Permissions</strong></button>
-              <button type="button" class="list-group-item list-group-item-action" onclick="managing_devices('${item.id}', '${item.mobile_no}', '${item.name}')"><i class="bi bi-cpu pe-1"></i><strong>Managing Devices</strong></button><button type="button" class="list-group-item list-group-item-action text-info" onclick="device_group('${item.id}', '${item.mobile_no}', '${item.name}')"><i class="bi bi-person-lines-fill"></i><strong>Group/Area View</strong></button>
-              </div>
-              </ul>
-              </div>
-              </td>
-              </tr>
-              `);
-           });*/
+            
             const totalPages = response.totalPages;
+            const totalRecords = response.totalRecords || 0;
+            
+            // Update record count display
+            updateUserRecordCount(page, limit, totalRecords);
+            
+            // Setup pagination
             pagination_fun(pagination, totalPages, page);
         }
     });
 }
+
+// Function to update user record count display
+function updateUserRecordCount(currentPage, itemsPerPage, totalRecords) {
+    const recordCountElement = document.getElementById('user-record-count');
+    
+    if (recordCountElement && totalRecords > 0) {
+        const startRecord = (currentPage - 1) * itemsPerPage + 1;
+        const endRecord = Math.min(currentPage * itemsPerPage, totalRecords);
+        recordCountElement.textContent = `${startRecord}-${endRecord} of ${totalRecords}`;
+    } else if (recordCountElement) {
+        recordCountElement.textContent = '0-0 of 0';
+    }
+}
+
 function permissionModal(userId, mobileNo, name) {
     document.getElementById('userid_per').textContent = userId;
     $('#permissions-form .form-check-input').prop('checked', false);
@@ -566,11 +552,8 @@ function devicehandleSearch() {
     }
 }
 
-// Modified version of fetchUserDevices to maintain selections
+// Modified fetchUserDevices function to include record count updates
 function fetchUserDevices(userid_devices, page, limit, search_device) {
-    // Don't reset the selectAll checkbox or clear selection count
-    // Don't clear selectedUserDeviceIds to persist selections across searches
-  
     $("#pre-loader").css('display', 'block');
     $.ajax({
         url: '../account/code/user-handling-devices-table.php',
@@ -607,6 +590,11 @@ function fetchUserDevices(userid_devices, page, limit, search_device) {
             }
             
             const totalPages = response.totalPages;
+            const totalRecords = response.totalRecords || 0;
+            
+            // Update record count display for user devices
+            updateDeviceRecordCount(page, limit, totalRecords, 'user-devices-record-count');
+            
             pagination_fun(pagination, totalPages, page);
             
             // Update the count of visible and selected devices
@@ -759,7 +747,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 function pagination_fun(pagination, totalPages, page) {
-
+    page = Number(page);
+    
     const maxPagesToShow = 5;
     const windowSize = Math.floor(maxPagesToShow / 2);
     let startPage = Math.max(1, page - windowSize);
@@ -776,45 +765,45 @@ function pagination_fun(pagination, totalPages, page) {
     // Add "First" button
     if (page > 1) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="1">First</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="1">First</a>
+            </li>
         `);
     }
 
     // Add "Previous" button
     if (page > 1) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
+            </li>
         `);
     }
 
     // Add page number buttons
     for (let i = startPage; i <= endPage; i++) {
         pagination.append(`
-      <li class="page-item ${i === page ? 'active' : ''}">
-      <a class="page-link" href="#" data-page="${i}">${i}</a>
-      </li>
+            <li class="page-item ${i === page ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
         `);
     }
 
     // Add "Next" button
     if (page < totalPages) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="${page + 1}">Next</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${page + 1}">Next</a>
+            </li>
         `);
     }
 
     // Add "Last" button
     if (page < totalPages) {
         pagination.append(`
-      <li class="page-item">
-      <a class="page-link" href="#" data-page="${totalPages}">Last</a>
-      </li>
+            <li class="page-item">
+                <a class="page-link" href="#" data-page="${totalPages}">Last</a>
+            </li>
         `);
     }
 }
@@ -1072,9 +1061,6 @@ function adminhandlesearch() {
 }
 
 function fetchAdminDevices(userid_devices, page, limit, search_device) {
-    // Don't reset the selectAllAdd checkbox or clear selection count
-    // Don't clear the selectedDeviceIds here to persist selections across searches
-    
     $("#pre-loader").css('display', 'block');
     $.ajax({
         url: '../account/code/admin-handling-devices-table.php',
@@ -1111,6 +1097,11 @@ function fetchAdminDevices(userid_devices, page, limit, search_device) {
             }
             
             const totalPages = response.totalPages;
+            const totalRecords = response.totalRecords || 0;
+            
+            // Update record count display for admin devices - Fixed with correct ID!
+            updateDeviceRecordCount(page, limit, totalRecords, 'admin-add-devices-record-count');
+            
             pagination_fun(pagination, totalPages, page);
             
             // Update the count of visible and selected devices
@@ -1118,7 +1109,17 @@ function fetchAdminDevices(userid_devices, page, limit, search_device) {
         }
     });
 }
-
+function updateDeviceRecordCount(currentPage, itemsPerPage, totalRecords, elementId) {
+    const recordCountElement = document.getElementById(elementId);
+    
+    if (recordCountElement && totalRecords > 0) {
+        const startRecord = (currentPage - 1) * itemsPerPage + 1;
+        const endRecord = Math.min(currentPage * itemsPerPage, totalRecords);
+        recordCountElement.textContent = `${startRecord}-${endRecord} of ${totalRecords}`;
+    } else if (recordCountElement) {
+        recordCountElement.textContent = '0-0 of 0';
+    }
+}
 document.addEventListener("DOMContentLoaded", function () {
     // Update the Select All functionality
     document.getElementById('selectAllAdd').addEventListener('click', function () {
