@@ -330,7 +330,6 @@ document.getElementById('items-per-page').addEventListener('change', function ()
 	document.getElementById('pre-loader').style.display = 'block';
     currentPage = 1; // Reset to the first page whenever records per page changes
     update_all_group_data_table();
-
 });
 
 function update_all_group_data_table() {
@@ -440,13 +439,20 @@ function update_all_group_data_table() {
             // Render the table rows (frame data) dynamically
         	$("#frame_data_table").html(response.data);
 
-            // Display row count
-        	$("#row-count").text("Total Rows: " + response.rowCount);
+            // Update record count display
+        	const totalRecords = response.rowCount || 0;
+        	updateDataReportRecordCount(currentPage, recordsPerPage, totalRecords);
 
             // Create pagination controls dynamically
         	$("#pagination-controls").empty();
-
         	pagination_fun($("#pagination-controls"), response.totalPages, currentPage);
+        	
+        	// Show pagination section if there are results
+        	if (totalRecords > 0) {
+        		$("#pageSelection-div").show();
+        	} else {
+        		$("#pageSelection-div").hide();
+        	}
         },
         error: function(jqXHR, textStatus, errorThrown) {
         	$("#pre-loader").css('display', 'none');
@@ -454,6 +460,19 @@ function update_all_group_data_table() {
         	error_toast.show();
         }
     });
+}
+
+// Function to update data report record count display
+function updateDataReportRecordCount(currentPage, itemsPerPage, totalRecords) {
+    const recordCountElement = document.getElementById('data-report-record-count');
+    
+    if (recordCountElement && totalRecords > 0) {
+        const startRecord = (currentPage - 1) * itemsPerPage + 1;
+        const endRecord = Math.min(currentPage * itemsPerPage, totalRecords);
+        recordCountElement.textContent = `${startRecord}-${endRecord} of ${totalRecords}`;
+    } else if (recordCountElement) {
+        recordCountElement.textContent = '0-0 of 0';
+    }
 }
 
 // Function to handle pagination controls
