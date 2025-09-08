@@ -326,31 +326,46 @@ let recordsPerPage = 20;
 let currentPage = 1;
 
 document.getElementById('items-per-page').addEventListener('change', function () {
-	recordsPerPage = document.getElementById('items-per-page').value;
-	document.getElementById('pre-loader').style.display = 'block';
+    recordsPerPage = document.getElementById('items-per-page').value;
+    document.getElementById('pre-loader').style.display = 'block';
     currentPage = 1; // Reset to the first page whenever records per page changes
     update_all_group_data_table();
-
 });
 
+// Function to update record count display
+function updateRecordCountDisplay(currentPage, recordsPerPage, totalRecords) {
+    const startRecord = totalRecords > 0 ? ((currentPage - 1) * recordsPerPage) + 1 : 0;
+    const endRecord = Math.min(currentPage * recordsPerPage, totalRecords);
+    
+    const recordCountText = totalRecords > 0 
+        ? `${startRecord}-${endRecord} of ${totalRecords}`
+        : '0 of 0';
+    
+    // Update the record count display element
+    const recordCountElement = document.getElementById('record-count-display');
+    if (recordCountElement) {
+        recordCountElement.textContent = recordCountText;
+    }
+}
+
 function update_all_group_data_table() {
-	$.ajax({
-		type: "POST",
-		url: '../data-report/code/all-group-data.php',
-		traditional: true,
-		dataType: "json",
-		data: {
-			recordsPerPage: recordsPerPage,
+    $.ajax({
+        type: "POST",
+        url: '../data-report/code/all-group-data.php',
+        traditional: true,
+        dataType: "json",
+        data: {
+            recordsPerPage: recordsPerPage,
             pageNumber: currentPage // Send current page to backend
         },
         success: function(response) {
-        	console.log(response);
-        	$("#pre-loader").css('display', 'none');
-        	$("#frame_data_table_header").html("");
+            console.log(response);
+            $("#pre-loader").css('display', 'none');
+            $("#frame_data_table_header").html("");
 
             // Update table headers and rows based on the selected phase
-        	if (response.selected_phase == "1PH") {
-        		$("#frame_data_table_header").html(`
+            if (response.selected_phase == "1PH") {
+                $("#frame_data_table_header").html(`
                     <tr class="header-row-1">
                         <th class="table-header-row-1"></th>
                         <th class="table-header-row-1 col-size-1">Updated at</th>
@@ -384,9 +399,9 @@ function update_all_group_data_table() {
                         <th class="table-header-row-2"></th>
                         <th class="table-header-row-2"></th>
                     </tr>
-        		`);
-        	} else {
-        		$("#frame_data_table_header").html(`
+                `);
+            } else {
+                $("#frame_data_table_header").html(`
                     <tr class="header-row-1">
                         <th class="table-header-row-1"></th>
                         <th class="table-header-row-1 col-size-1">Updated at</th>
@@ -434,96 +449,101 @@ function update_all_group_data_table() {
                         <th class="table-header-row-2"></th>
                         <th class="table-header-row-2"></th>
                     </tr>
-        		`);
-        	}
+                `);
+            }
 
             // Render the table rows (frame data) dynamically
-        	$("#frame_data_table").html(response.data);
+            $("#frame_data_table").html(response.data);
 
-            // Display row count
-        	$("#row-count").text("Total Rows: " + response.rowCount);
+            // Update record count display
+            updateRecordCountDisplay(currentPage, recordsPerPage, response.rowCount);
+
+            // Display row count (keeping your existing total count display)
+            $("#row-count").text("Total Rows: " + response.rowCount);
 
             // Create pagination controls dynamically
-        	$("#pagination-controls").empty();
+            $("#pagination-controls").empty();
 
-        	pagination_fun($("#pagination-controls"), response.totalPages, currentPage);
+            pagination_fun($("#pagination-controls"), response.totalPages, currentPage);
         },
         error: function(jqXHR, textStatus, errorThrown) {
-        	$("#pre-loader").css('display', 'none');
-        	error_message_text.textContent = "Error getting the data";
-        	error_toast.show();
+            $("#pre-loader").css('display', 'none');
+            // Update record count display for error case
+            updateRecordCountDisplay(1, recordsPerPage, 0);
+            error_message_text.textContent = "Error getting the data";
+            error_toast.show();
         }
     });
 }
 
 // Function to handle pagination controls
 function pagination_fun(pagination, totalPages, page) {
-	page = Number(page);
+    page = Number(page);
 
-	const maxPagesToShow = 5;
-	const windowSize = Math.floor(maxPagesToShow / 2);
-	let startPage = Math.max(1, page - windowSize);
-	let endPage = Math.min(totalPages, page + windowSize);
+    const maxPagesToShow = 5;
+    const windowSize = Math.floor(maxPagesToShow / 2);
+    let startPage = Math.max(1, page - windowSize);
+    let endPage = Math.min(totalPages, page + windowSize);
 
-	if (page - windowSize < 1) {
-		endPage = Math.min(totalPages, endPage + (windowSize - (page - 1)));
-	}
+    if (page - windowSize < 1) {
+        endPage = Math.min(totalPages, endPage + (windowSize - (page - 1)));
+    }
 
-	if (page + windowSize > totalPages) {
-		startPage = Math.max(1, startPage - (page + windowSize - totalPages));
-	}
+    if (page + windowSize > totalPages) {
+        startPage = Math.max(1, startPage - (page + windowSize - totalPages));
+    }
 
     // Add "First" button
-	if (page > 1) {
-		pagination.append(`
+    if (page > 1) {
+        pagination.append(`
             <li class="page-item">
                 <a class="page-link" href="#" data-page="1">First</a>
             </li>
-		`);
-	}
+        `);
+    }
 
     // Add "Previous" button
-	if (page > 1) {
-		pagination.append(`
+    if (page > 1) {
+        pagination.append(`
             <li class="page-item">
                 <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
             </li>
-		`);
-	}
+        `);
+    }
 
     // Add page number buttons
-	for (let i = startPage; i <= endPage; i++) {
-		pagination.append(`
+    for (let i = startPage; i <= endPage; i++) {
+        pagination.append(`
             <li class="page-item ${i === page ? 'active' : ''}">
                 <a class="page-link" href="#" data-page="${i}">${i}</a>
             </li>
-		`);
-	}
+        `);
+    }
 
     // Add "Next" button
-	if (page < totalPages) {
-		pagination.append(`
+    if (page < totalPages) {
+        pagination.append(`
             <li class="page-item">
                 <a class="page-link" href="#" data-page="${page + 1}">Next</a>
             </li>
-		`);
-	}
+        `);
+    }
 
     // Add "Last" button
-	if (page < totalPages) {
-		pagination.append(`
+    if (page < totalPages) {
+        pagination.append(`
             <li class="page-item">
                 <a class="page-link" href="#" data-page="${totalPages}">Last</a>
             </li>
-		`);
-	}
+        `);
+    }
 
     // Bind the page navigation events
-	pagination.find('a').on('click', function (e) {
-		e.preventDefault();
-		const pageNumber = $(this).data('page');
-		currentPage = pageNumber;
-		document.getElementById('pre-loader').style.display = 'block';
-		update_all_group_data_table();
-	});
+    pagination.find('a').on('click', function (e) {
+        e.preventDefault();
+        const pageNumber = $(this).data('page');
+        currentPage = pageNumber;
+        document.getElementById('pre-loader').style.display = 'block';
+        update_all_group_data_table();
+    });
 }

@@ -59,7 +59,7 @@ function update_switchPoints_status(group_id) {
             $("#installed_lights_off").text(response.OFF_LIGHT);
             $("#installed_load").text("Installed Lights Load = " + (response.INSTALLED_LOAD / 1000).toFixed(3));
             $("#active_load").text((response.ACTIVE_LOAD / 1000).toFixed(3));
-            $("#total_consumption_units").text(response.KWH); 
+            $("#total_consumption_units").text(response.KWH);
             $("#energy_saved_units").text(response.SAVED_UNITS);
             $("#amount_saved").text(response.SAVED_AMOUNT);
             $("#co2_saved").text(response.SAVED_CO2);
@@ -72,7 +72,7 @@ function update_switchPoints_status(group_id) {
             var activeLoad = (response.ACTIVE_LOAD / 1000).toFixed(3); // Assuming this key exists in your JSON response
             var installedLoad = (response.INSTALLED_LOAD / 1000).toFixed(3); // Assuming this key exists in your JSON response
             if (activeLoad == 0.000) {
-                activeLoad=0;
+                activeLoad = 0;
             }
             // Calculate the percentage for the active load
             if (installedLoad > 0)
@@ -124,7 +124,7 @@ function update_alerts(group_id) {
         }
     });
 }
-let items_per_page=200;
+let items_per_page = 20;
 
 
 
@@ -132,8 +132,8 @@ document.getElementById('total_device').onclick = function () {
 
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        items_per_page=parseInt($('#items-per-page-total').val());
-        get_devices_status(group_id, "ALL",1,items_per_page)
+        items_per_page = parseInt($('#items-per-page-total').val());
+        get_devices_status(group_id, "ALL", 1, items_per_page)
     }
 };
 document.getElementById('installed_devices_list').onclick = function () {
@@ -142,9 +142,9 @@ document.getElementById('installed_devices_list').onclick = function () {
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
 
-        items_per_page=parseInt($('#items-per-page-install').val());
-     
-        get_devices_status(group_id, "INSTALLED",1,items_per_page)
+        items_per_page = parseInt($('#items-per-page-install').val());
+
+        get_devices_status(group_id, "INSTALLED", 1, items_per_page)
     }
 };
 
@@ -153,10 +153,25 @@ document.getElementById('not_installed_devices_list').onclick = function () {
 
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        items_per_page=parseInt($('#items-per-page-uninstall').val());
-        get_devices_status(group_id, "NOTINSTALLED",1,items_per_page)
+        items_per_page = parseInt($('#items-per-page-uninstall').val());
+        get_devices_status(group_id, "NOTINSTALLED", 1, items_per_page)
     }
 };
+
+function updateRecordCount(totalRecords, currentPage, itemsPerPage, containerId) {
+    const startRecord = totalRecords > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0;
+    const endRecord = Math.min(currentPage * itemsPerPage, totalRecords);
+    
+    const recordCountText = totalRecords > 0 
+        ? `${startRecord}-${endRecord} of ${totalRecords}`
+        : '0 of 0';
+    
+    // Update the record count display
+    const recordCountElement = document.getElementById(containerId);
+    if (recordCountElement) {
+        recordCountElement.textContent = recordCountText;
+    }
+}
 
 // Global variables for pagination state
 let currentPage = 1;
@@ -166,7 +181,7 @@ let currentStatus = "ALL";
 let totalPages = 1;
 
 function get_devices_status(group_id, status, page = 1, items_per_page = null) {
- 
+
     if (items_per_page === null) {
         items_per_page = currentItemsPerPage;
     }
@@ -181,8 +196,7 @@ function get_devices_status(group_id, status, page = 1, items_per_page = null) {
     currentItemsPerPage = items_per_page;
     currentGroupId = group_id;
     currentStatus = status;
-
-    $("#pre-loader").css('display', 'block');
+$("#pre-loader").css('display', 'block');
     $.ajax({
         type: "POST",
         url: "../dashboard/code/dashboard_device_list.php",
@@ -210,48 +224,56 @@ function get_devices_status(group_id, status, page = 1, items_per_page = null) {
                 // Populate appropriate table
                 if (status == "ALL") {
                     $("#total_device_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-total');
                 } else if (status == "INSTALLED") {
                     $("#installed_device_list_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-install');
                 } else {
                     $("#not_installed_device_list_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-uninstall');
                 }
                 
                 // Update pagination
                 totalPages = response.totalPages;
-                updatePagination(response.totalRecords, response.totalPages, page,status);
+                updatePagination(response.totalRecords, response.totalPages, page, status);
                 setupCheckboxListeners();
             } else {
-                // Handle error
-                const errorRow = `<tr><td colspan="6" class="text-danger">${response.message || 'Error loading data'}</td></tr>`;
+                // Handle error - clear record counts
                 if (status == "ALL") {
-                    $("#total_device_table").html(errorRow);
+                    $("#total_device_table").html(`<tr><td colspan="6" class="text-danger">${response.message || 'Error loading data'}</td></tr>`);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-total');
                 } else if (status == "INSTALLED") {
-                    $("#installed_device_list_table").html(errorRow);
+                    $("#installed_device_list_table").html(`<tr><td colspan="6" class="text-danger">${response.message || 'Error loading data'}</td></tr>`);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-install');
                 } else {
-                    $("#not_installed_device_list_table").html(errorRow);
+                    $("#not_installed_device_list_table").html(`<tr><td colspan="3" class="text-danger">${response.message || 'Error loading data'}</td></tr>`);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-uninstall');
                 }
-                updatePagination(0, 0, 1,'ALL');
+                updatePagination(0, 0, 1, status);
             }
         },
         error: function (xhr, status, error) {
+            // ... existing error handling with record count updates ...
             $("#pre-loader").css('display', 'none');
             
-            // Clear tables on error
             if (currentStatus == "ALL") {
                 $("#total_device_table").html(`<tr><td colspan="6" class="text-danger">Error loading data</td></tr>`);
+                updateRecordCount(0, 1, currentItemsPerPage, 'record-count-total');
             } else if (currentStatus == "INSTALLED") {
                 $("#installed_device_list_table").html(`<tr><td colspan="6" class="text-danger">Error loading data</td></tr>`);
+                updateRecordCount(0, 1, currentItemsPerPage, 'record-count-install');
             } else {
                 $("#not_installed_device_list_table").html(`<tr><td colspan="3" class="text-danger">Error loading data</td></tr>`);
+                updateRecordCount(0, 1, currentItemsPerPage, 'record-count-uninstall');
             }
             
-            updatePagination(0, 0, 1,'ALL');
+            updatePagination(0, 0, 1, 'ALL');
         }
     });
 }
 
 function updatePagination(totalRecords, totalPages, currentPage, status) {
-   
+
 
     // Set the appropriate pagination container based on status
     let pagination;
@@ -270,27 +292,27 @@ function updatePagination(totalRecords, totalPages, currentPage, status) {
     if (totalPages <= 1) {
         return;
     }
-    
+
     // Call pagination function to update page numbers
     pagination_fun(pagination, totalPages, currentPage);
 }
 
 function pagination_fun(pagination, totalPages, page) {
     page = Number(page);
-    
+
     const maxPagesToShow = 5;
     const windowSize = Math.floor(maxPagesToShow / 2);
     let startPage = Math.max(1, page - windowSize);
     let endPage = Math.min(totalPages, page + windowSize);
-    
+
     if (page - windowSize < 1) {
         endPage = Math.min(totalPages, endPage + (windowSize - (page - 1)));
     }
-    
+
     if (page + windowSize > totalPages) {
         startPage = Math.max(1, startPage - (page + windowSize - totalPages));
     }
-    
+
     // Add "First" button
     if (page > 1) {
         pagination.append(`
@@ -299,7 +321,7 @@ function pagination_fun(pagination, totalPages, page) {
             </li>
         `);
     }
-    
+
     // Add "Previous" button
     if (page > 1) {
         pagination.append(`
@@ -308,7 +330,7 @@ function pagination_fun(pagination, totalPages, page) {
             </li>
         `);
     }
-    
+
     // Add page number buttons
     for (let i = startPage; i <= endPage; i++) {
         pagination.append(`
@@ -317,7 +339,7 @@ function pagination_fun(pagination, totalPages, page) {
             </li>
         `);
     }
-    
+
     // Add "Next" button
     if (page < totalPages) {
         pagination.append(`
@@ -326,7 +348,7 @@ function pagination_fun(pagination, totalPages, page) {
             </li>
         `);
     }
-    
+
     // Add "Last" button
     if (page < totalPages) {
         pagination.append(`
@@ -337,165 +359,372 @@ function pagination_fun(pagination, totalPages, page) {
     }
 }
 
-// Event handlers for pagination
-$(document).ready(function() {
-    // Handle pagination clicks
-    $(document).on('click', '.page-link', function(e) {
-        e.preventDefault();
-        const page = $(this).data('page');
-        if (page && page !== currentPage) {
-            get_devices_status(currentGroupId, currentStatus, page, currentItemsPerPage);
-        }
-    });
-    
-    // Handle items per page change
-    $('#items-per-page-total,#items-per-page-install,#items-per-page-uninstall').on('change', function() {
-        const itemsPerPage = $(this).val();
-        currentItemsPerPage = itemsPerPage;
-        // Reset to page 1 when changing items per page
-        get_devices_status(currentGroupId, currentStatus, 1, itemsPerPage);
-    });
-});
 
-// You can call this function from your existing buttons/dropdowns
-// function loadDevicesByStatus(status) {
-//     get_devices_status(currentGroupId, status, 1, currentItemsPerPage);
-// }
+let currentInstalledPage = 1;
+let currentInstalledItemsPerPage = 20;
+let currentInstalledGroupId = "ALL";
+let currentInstalledStatus = "ALL";
+let totalInstalledPages = 1;
+
+// Updated click event handlers
 document.getElementById('active_device_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        installed_devices_status(group_id, "ACTIVE_DEVICES")
+        let items_per_page = parseInt($('#items-per-page-active').val());
+        installed_devices_status(group_id, "ACTIVE_DEVICES", 1, items_per_page);
     }
 };
 
 document.getElementById('poor_nw_device_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        installed_devices_status(group_id, "POOR_NW_DEVICES")
+        let items_per_page = parseInt($('#items-per-page-poor').val());
+        installed_devices_status(group_id, "POOR_NW_DEVICES", 1, items_per_page);
     }
 };
+
 document.getElementById('power_failure_device_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        installed_devices_status(group_id, "POWER_FAIL_DEVICES")
+        let items_per_page = parseInt($('#items-per-page-power').val());
+        installed_devices_status(group_id, "POWER_FAIL_DEVICES", 1, items_per_page);
     }
 };
+
 document.getElementById('faulty_device_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        installed_devices_status(group_id, "FAULTY_DEVICES")
+        let items_per_page = parseInt($('#items-per-page-faulty').val());
+        installed_devices_status(group_id, "FAULTY_DEVICES", 1, items_per_page);
     }
 };
 
-function installed_devices_status(group_id, status) {
+// Updated installed_devices_status function with pagination
+function installed_devices_status(group_id, status, page = 1, items_per_page = null) {
+    if (items_per_page === null) {
+        items_per_page = currentInstalledItemsPerPage;
+    }
+
+    // If status changed, reset to page 1
+    if (status !== currentInstalledStatus || group_id !== currentInstalledGroupId) {
+        page = 1;
+    }
+
+    // Update global state
+    currentInstalledPage = page;
+    currentInstalledItemsPerPage = items_per_page;
+    currentInstalledGroupId = group_id;
+    currentInstalledStatus = status;
 
     $("#pre-loader").css('display', 'block');
     $.ajax({
-        type: "POST", // Method type
-        url: "../dashboard/code/installed_devices_status.php", // PHP script URL
+        type: "POST",
+        url: "../dashboard/code/installed_devices_status.php",
         data: {
-            GROUP_ID: group_id, STATUS: status // Optional data to send to PHP script
+            GROUP_ID: group_id,
+            STATUS: status,
+            PAGE: page,
+            ITEMS_PER_PAGE: items_per_page
         },
-        dataType: "json", // Expected data type from PHP script
+        dataType: "json",
         success: function (response) {
-
-
-
-            if (status == "ACTIVE_DEVICES") {
-                $("#active_device_list_update_table").html("");
-                $("#active_device_list_update_table").html(response);
-            }
-            else if (status == "POOR_NW_DEVICES") {
-                $("#poor_nw_list_table").html("");
-                $("#poor_nw_list_table").html(response);
-            }
-            else if (status == "POWER_FAIL_DEVICES") {
-                $("#power_fail_devices_table").html("");
-                $("#power_fail_devices_table").html(response);
-            }
-
-            else if (status == "FAULTY_DEVICES") {
-                $("#faulty_device_list_table").html("");
-                $("#faulty_device_list_table").html(response);
-            }
             $("#pre-loader").css('display', 'none');
+            
+            // Clear all tables first
+            $("#active_device_list_update_table").html("");
+            $("#poor_nw_list_table").html("");
+            $("#power_fail_devices_table").html("");
+            $("#faulty_device_list_table").html("");
+
+            // Handle response
+            if (response.success) {
+                // Populate appropriate table and update record count
+                if (status == "ACTIVE_DEVICES") {
+                    $("#active_device_list_update_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-active');
+                } else if (status == "POOR_NW_DEVICES") {
+                    $("#poor_nw_list_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-poor');
+                } else if (status == "POWER_FAIL_DEVICES") {
+                    $("#power_fail_devices_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-power');
+                } else if (status == "FAULTY_DEVICES") {
+                    $("#faulty_device_list_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-faulty');
+                }
+                
+                // Update pagination
+                totalInstalledPages = response.totalPages;
+                updateInstalledPagination(response.totalRecords, response.totalPages, page, status);
+            } else {
+                // Handle error with record count reset
+                const errorRow = `<tr><td colspan="6" class="text-danger">${response.message || 'Error loading data'}</td></tr>`;
+                if (status == "ACTIVE_DEVICES") {
+                    $("#active_device_list_update_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-active');
+                } else if (status == "POOR_NW_DEVICES") {
+                    $("#poor_nw_list_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-poor');
+                } else if (status == "POWER_FAIL_DEVICES") {
+                    $("#power_fail_devices_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-power');
+                } else if (status == "FAULTY_DEVICES") {
+                    $("#faulty_device_list_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-faulty');
+                }
+                updateInstalledPagination(0, 0, 1, status);
+            }
         },
         error: function (xhr, status, error) {
-            $("#total_device_table").html("");
-            console.error("Error:", status, error);
             $("#pre-loader").css('display', 'none');
-            // Handle errors here if necessary
+            console.error("Error:", status, error);
+            
+            const errorRow = `<tr><td colspan="6" class="text-danger">Error loading data</td></tr>`;
+            if (currentInstalledStatus == "ACTIVE_DEVICES") {
+                $("#active_device_list_update_table").html(errorRow);
+                updateRecordCount(0, 1, currentInstalledItemsPerPage, 'record-count-active');
+            } else if (currentInstalledStatus == "POOR_NW_DEVICES") {
+                $("#poor_nw_list_table").html(errorRow);
+                updateRecordCount(0, 1, currentInstalledItemsPerPage, 'record-count-poor');
+            } else if (currentInstalledStatus == "POWER_FAIL_DEVICES") {
+                $("#power_fail_devices_table").html(errorRow);
+                updateRecordCount(0, 1, currentInstalledItemsPerPage, 'record-count-power');
+            } else if (currentInstalledStatus == "FAULTY_DEVICES") {
+                $("#faulty_device_list_table").html(errorRow);
+                updateRecordCount(0, 1, currentInstalledItemsPerPage, 'record-count-faulty');
+            }
+            
+            updateInstalledPagination(0, 0, 1, currentInstalledStatus);
         }
     });
 }
 
+function updateInstalledPagination(totalRecords, totalPages, currentPage, status) {
+    // Set the appropriate pagination container based on status
+    let pagination;
+    if (status === 'ACTIVE_DEVICES') {
+        pagination = $("#pagination-active");
+    } else if (status === 'POOR_NW_DEVICES') {
+        pagination = $("#pagination-poor");
+    } else if (status === 'POWER_FAIL_DEVICES') {
+        pagination = $("#pagination-power");
+    } else if (status === 'FAULTY_DEVICES') {
+        pagination = $("#pagination-faulty");
+    }
 
+    // Clear existing pagination items
+    pagination.empty();
+
+    // If only one page, no pagination needed
+    if (totalPages <= 1) {
+        return;
+    }
+
+    // Call pagination function to update page numbers
+    pagination_fun(pagination, totalPages, currentPage);
+}
+
+// Global variables for active device pagination state
+let currentActivePage = 1;
+let currentActiveItemsPerPage = 20;
+let currentActiveGroupId = "ALL";
+let currentActiveStatus = "ALL";
+let totalActivePages = 1;
+
+// Updated click event handlers for active device status
 document.getElementById('auto_on_devices_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        active_device_status(group_id, "ON_LIGHTS")
+        let items_per_page = parseInt($('#items-per-page-system').val());
+        active_device_status(group_id, "ON_LIGHTS", 1, items_per_page);
     }
 };
-
 
 document.getElementById('off_devices_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        active_device_status(group_id, "OFF_LIGHTS")
+        let items_per_page = parseInt($('#items-per-page-off').val());
+        active_device_status(group_id, "OFF_LIGHTS", 1, items_per_page);
     }
 };
+
 document.getElementById('manual_on_devices_list').onclick = function () {
-
     let group_id = group_list.value;
     if (group_id !== "" && group_id !== null) {
-        active_device_status(group_id, "MANUAL_ON")
+        let items_per_page = parseInt($('#items-per-page-manual').val());
+        active_device_status(group_id, "MANUAL_ON", 1, items_per_page);
     }
 };
 
+// Updated active_device_status function with pagination
+function active_device_status(group_id, status, page = 1, items_per_page = null) {
+    if (items_per_page === null) {
+        items_per_page = currentActiveItemsPerPage;
+    }
 
-function active_device_status(group_id, status) {
+    // If status changed, reset to page 1
+    if (status !== currentActiveStatus || group_id !== currentActiveGroupId) {
+        page = 1;
+    }
+
+    // Update global state
+    currentActivePage = page;
+    currentActiveItemsPerPage = items_per_page;
+    currentActiveGroupId = group_id;
+    currentActiveStatus = status;
 
     $("#pre-loader").css('display', 'block');
     $.ajax({
-        type: "POST", // Method type
-        url: "../dashboard/code/active_device_lights_status.php", // PHP script URL
+        type: "POST",
+        url: "../dashboard/code/active_device_lights_status.php",
         data: {
-            GROUP_ID: group_id, STATUS: status // Optional data to send to PHP script
+            GROUP_ID: group_id,
+            STATUS: status,
+            PAGE: page,
+            ITEMS_PER_PAGE: items_per_page
         },
-        dataType: "json", // Expected data type from PHP script
-        success: function (response) {
-
-
-
-            if (status == "ON_LIGHTS") {
-                $("#on_devices_table").html("");
-                $("#on_devices_table").html(response);
-            }
-            else if (status == "OFF_LIGHTS") {
-                $("#off_device_table").html("");
-                $("#off_device_table").html(response);
-            }
-
-            else if (status == "MANUAL_ON") {
-                $("#manual_on_devices_table").html("");
-                $("#manual_on_devices_table").html(response);
-            }
+        dataType: "json",
+         success: function (response) {
             $("#pre-loader").css('display', 'none');
+            
+            // Clear all tables first
+            $("#on_devices_table").html("");
+            $("#off_device_table").html("");
+            $("#manual_on_devices_table").html("");
+
+            // Handle response
+            if (response.success) {
+                // Populate appropriate table and update record count
+                if (status == "ON_LIGHTS") {
+                    $("#on_devices_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-system');
+                } else if (status == "OFF_LIGHTS") {
+                    $("#off_device_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-off');
+                } else if (status == "MANUAL_ON") {
+                    $("#manual_on_devices_table").html(response.data);
+                    updateRecordCount(response.totalRecords, page, items_per_page, 'record-count-manual');
+                }
+                
+                // Update pagination
+                totalActivePages = response.totalPages;
+                updateActivePagination(response.totalRecords, response.totalPages, page, status);
+            } else {
+                // Handle error with record count reset
+                const errorRow = `<tr><td colspan="6" class="text-danger">${response.message || 'Error loading data'}</td></tr>`;
+                if (status == "ON_LIGHTS") {
+                    $("#on_devices_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-system');
+                } else if (status == "OFF_LIGHTS") {
+                    $("#off_device_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-off');
+                } else if (status == "MANUAL_ON") {
+                    $("#manual_on_devices_table").html(errorRow);
+                    updateRecordCount(0, 1, items_per_page, 'record-count-manual');
+                }
+                updateActivePagination(0, 0, 1, status);
+            }
         },
         error: function (xhr, status, error) {
-            $("#total_device_table").html("");
+             $("#pre-loader").css('display', 'none');
             console.error("Error:", status, error);
-            $("#pre-loader").css('display', 'none');
-            // Handle errors here if necessary
+            
+            const errorRow = `<tr><td colspan="6" class="text-danger">Error loading data</td></tr>`;
+            if (currentActiveStatus == "ON_LIGHTS") {
+                $("#on_devices_table").html(errorRow);
+                updateRecordCount(0, 1, currentActiveItemsPerPage, 'record-count-system');
+            } else if (currentActiveStatus == "OFF_LIGHTS") {
+                $("#off_device_table").html(errorRow);
+                updateRecordCount(0, 1, currentActiveItemsPerPage, 'record-count-off');
+            } else if (currentActiveStatus == "MANUAL_ON") {
+                $("#manual_on_devices_table").html(errorRow);
+                updateRecordCount(0, 1, currentActiveItemsPerPage, 'record-count-manual');
+            }
+            
+            updateActivePagination(0, 0, 1, currentActiveStatus);
         }
     });
 }
+
+function updateActivePagination(totalRecords, totalPages, currentPage, status) {
+    // Set the appropriate pagination container based on status
+    let pagination;
+    if (status === 'ON_LIGHTS') {
+        pagination = $("#pagination-system");
+    } else if (status === 'OFF_LIGHTS') {
+        pagination = $("#pagination-off");
+    } else if (status === 'MANUAL_ON') {
+        pagination = $("#pagination-manual");
+    }
+
+    // Clear existing pagination items
+    pagination.empty();
+
+    // If only one page, no pagination needed
+    if (totalPages <= 1) {
+        return;
+    }
+
+    // Call pagination function to update page numbers
+    pagination_fun(pagination, totalPages, currentPage);
+}
+
+// Enhanced document ready function to include active device pagination
+$(document).ready(function () {
+    // Handle pagination clicks for all types
+    $(document).on('click', '.page-link', function (e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+
+        // Check which pagination container this belongs to
+        const paginationContainer = $(this).closest('ul').attr('id');
+
+        if (paginationContainer === 'pagination-total' ||
+            paginationContainer === 'pagination-install' ||
+            paginationContainer === 'pagination-uninstall') {
+            // Main device status pagination
+            if (page && page !== currentPage) {
+                get_devices_status(currentGroupId, currentStatus, page, currentItemsPerPage);
+            }
+        } else if (paginationContainer === 'pagination-active' ||
+            paginationContainer === 'pagination-poor' ||
+            paginationContainer === 'pagination-power' ||
+            paginationContainer === 'pagination-faulty') {
+            // Installed devices status pagination
+            if (page && page !== currentInstalledPage) {
+                installed_devices_status(currentInstalledGroupId, currentInstalledStatus, page, currentInstalledItemsPerPage);
+            }
+        } else if (paginationContainer === 'pagination-system' ||
+            paginationContainer === 'pagination-off' ||
+            paginationContainer === 'pagination-manual') {
+            // Active devices status pagination
+            if (page && page !== currentActivePage) {
+                active_device_status(currentActiveGroupId, currentActiveStatus, page, currentActiveItemsPerPage);
+            }
+        }
+    });
+
+    // Handle items per page change for main device status
+    $('#items-per-page-total,#items-per-page-install,#items-per-page-uninstall').on('change', function () {
+        const itemsPerPage = $(this).val();
+        currentItemsPerPage = itemsPerPage;
+        get_devices_status(currentGroupId, currentStatus, 1, itemsPerPage);
+    });
+
+    // Handle items per page change for installed devices status
+    $('#items-per-page-active,#items-per-page-poor,#items-per-page-power,#items-per-page-faulty').on('change', function () {
+        const itemsPerPage = $(this).val();
+        currentInstalledItemsPerPage = itemsPerPage;
+        installed_devices_status(currentInstalledGroupId, currentInstalledStatus, 1, itemsPerPage);
+    });
+
+    // Handle items per page change for active devices status
+    $('#items-per-page-system,#items-per-page-off,#items-per-page-manual').on('change', function () {
+        const itemsPerPage = $(this).val();
+        currentActiveItemsPerPage = itemsPerPage;
+        active_device_status(currentActiveGroupId, currentActiveStatus, 1, itemsPerPage);
+    });
+});
 
 function openOpenviewModal(device_id) {
 
@@ -647,7 +876,7 @@ function check_uncheck_fun(element) {
 }
 
 function openBatchConfirmModal(action, tableId) {
-    
+
     const table = document.getElementById(tableId);
 
     if (!table) {
