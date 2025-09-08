@@ -24,7 +24,7 @@ SessionManager::checkSession();
       ?>
       <div class="row">
         <div class="col-12">
-          <div class="row p-0 justify-content-end align-items-center mt-3 p-0">
+          <div class="row p-0 justify-content-end align-items-center mt-2 p-0">
             <div class="col-auto p-0 mb-2 ms-2">
               <button type="button" class="btn btn-primary" onclick="refreshMap()">
                 Refresh

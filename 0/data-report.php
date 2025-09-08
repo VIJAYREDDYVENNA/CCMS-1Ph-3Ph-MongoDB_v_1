@@ -23,9 +23,7 @@ SessionManager::checkSession();
 			<div class="row">
 				
 				<div class="col-12 p-0">
-
 					<div class="container-fluid text-center p-0 mt-3">
-
 						<div class="row d-flex align-items-center">
 							<div class="col-auto me-auto "><label><input type="checkbox" id="view_all_group_device"> View All</label> </div>
 							<div class="col-auto">

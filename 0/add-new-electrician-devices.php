@@ -133,9 +133,9 @@ $permission_check = 0;
             // include(BASE_PATH . "dropdown-selection/group-device-list.php");
             include(BASE_PATH . "dropdown-selection/device-list.php");
             ?>
-            <div class="row">
+            <div class="row ">
                 <!-- Add New Electrician -->
-                <div class="col-md-6">
+                <div class="col-md-6 p-0 pe-md-2">
                     <div class="card mt-3 h-100 d-flex flex-column">
                         <div class="card-header bg-primary bg-opacity-25 fw-bold">
                             <ul class="nav nav-tabs card-header-tabs" id="electricianTabs" role="tablist">
@@ -227,7 +227,7 @@ $permission_check = 0;
 
 
                 <!-- Assign Devices -->
-                <div class="col-md-6">
+                <div class="col-md-6 p-0 ps-md-2 mt-2 mt-md-0">
                     <div class="card mt-3 h-100 d-flex flex-column">
                         <div class="card-header bg-primary bg-opacity-25 fw-bold">
                             <span class="me-2">Assign Devices</span>
@@ -298,7 +298,7 @@ $permission_check = 0;
                 </div>
             </div>
             <div class="row mt-2">
-                <div class="col-md-6">
+                <div class="col-md-6 pe-md-2 p-0">
                     <div class="card mt-3  d-flex flex-column">
                         <div class="card-header bg-primary bg-opacity-25 fw-bold">
                             <span class="me-2">Electrician List</span>

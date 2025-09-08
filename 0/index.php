@@ -214,9 +214,9 @@ SessionManager::checkSession();
 
             <?php include(BASE_PATH . "dropdown-selection/device-list.php"); ?>
 
-            <div class="row mt-3">
+            <div class="row">
                 <!-- Left Section (Cards + Map) -->
-                <div class="col-lg-8">
+                <div class="col-lg-8 ">
                     <div class="row pe-0 pe-lg-2">
                         <!-- Top Row: 3 Cards -->
                         <div class="col-12 rounded mt-2 p-0">
