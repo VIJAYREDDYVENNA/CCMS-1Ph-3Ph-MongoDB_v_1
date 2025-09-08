@@ -16,6 +16,13 @@ $user_devices = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $group_id = filter_input(INPUT_POST, 'GROUP_ID', FILTER_SANITIZE_STRING);
     $device_status = filter_input(INPUT_POST, 'STATUS', FILTER_SANITIZE_STRING);
+    $page = filter_input(INPUT_POST, 'PAGE', FILTER_VALIDATE_INT) ?: 1;
+    $items_per_page = filter_input(INPUT_POST, 'ITEMS_PER_PAGE', FILTER_VALIDATE_INT) ?: 20;
+
+    // Ensure valid pagination parameters
+    $page = max(1, $page);
+    $items_per_page = max(1, min(500, $items_per_page)); // Limit max items per page
+    $skip = ($page - 1) * $items_per_page;
 
     include_once(BASE_PATH_1 . "common-files/selecting_group_device.php");
 
@@ -30,7 +37,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_devices_array = array_filter($user_devices_array);
 
     if (empty($user_devices_array)) {
-        echo json_encode('<tr><td colspan="6" class="text-danger">No devices found for this group</td></tr>');
+        echo json_encode([
+            'success' => false,
+            'message' => 'No devices found for this group',
+            'data' => '<tr><td colspan="6" class="text-danger">No devices found for this group</td></tr>',
+            'totalRecords' => 0,
+            'totalPages' => 0
+        ]);
         exit;
     }
 
@@ -57,15 +70,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             break;
     }
 
-    // MongoDB does not support ordering by string length natively,
-    // so order by device_id ascending only
-    // Sorting by device_id lexically (you may implement client side length sorting if necessary)
-    $options = [
-        'sort' => ['device_id' => 1],
-    ];
-
     try {
         $collection = $devices_db_conn->live_data_updates;
+
+        // Get total count for pagination
+        $totalRecords = $collection->countDocuments($filter);
+        $totalPages = ceil($totalRecords / $items_per_page);
+
+        // MongoDB does not support ordering by string length natively,
+        // so order by device_id ascending only
+        // Sorting by device_id lexically (you may implement client side length sorting if necessary)
+        $options = [
+            'sort' => ['device_id' => 1],
+            'skip' => $skip,
+            'limit' => $items_per_page
+        ];
+
         $cursor = $collection->find($filter, $options);
 
         foreach ($cursor as $r) {
@@ -123,14 +143,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if (empty($return_response)) {
-            $return_response = '<tr><td colspan="6" class="text-danger">Devices Not Found</td></tr>';
+            echo json_encode([
+                'success' => false,
+                'message' => 'Devices Not Found',
+                'data' => '<tr><td colspan="6" class="text-danger">Devices Not Found</td></tr>',
+                'totalRecords' => 0,
+                'totalPages' => 0
+            ]);
+        } else {
+            echo json_encode([
+                'success' => true,
+                'data' => $return_response,
+                'totalRecords' => $totalRecords,
+                'totalPages' => $totalPages,
+                'currentPage' => $page,
+                'itemsPerPage' => $items_per_page
+            ]);
         }
+
     } catch (Exception $e) {
         error_log('Error fetching devices: ' . $e->getMessage());
-        $return_response = '<tr><td colspan="6" class="text-danger">Error loading devices</td></tr>';
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error loading devices: ' . $e->getMessage(),
+            'data' => '<tr><td colspan="6" class="text-danger">Error loading devices</td></tr>',
+            'totalRecords' => 0,
+            'totalPages' => 0
+        ]);
     }
 } else {
-    $return_response = '<tr><td colspan="6" class="text-danger">Input Data Not Valid</td></tr>';
+    echo json_encode([
+        'success' => false,
+        'message' => 'Input Data Not Valid',
+        'data' => '<tr><td colspan="6" class="text-danger">Input Data Not Valid</td></tr>',
+        'totalRecords' => 0,
+        'totalPages' => 0
+    ]);
 }
-
-echo json_encode($return_response);
+?>
