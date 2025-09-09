@@ -144,9 +144,11 @@ function data_backup(parameter) {
     $("#pre-loader").css('display', 'block');
     
     // Determine the URL based on parameter
-    let url = parameter === "backup-sql" 
-        ? '../data-backup/code/data-backup.php'
-        : '../data-backup/code/excel-backup.php';
+    // let url = parameter === "backup-sql" 
+    //     ? '../data-backup/code/data-backup.php'
+    //     : '../data-backup/code/excel-backup.php';
+
+    let url = '../data-backup/code/download-device-wise-data.php';
     
     // Create the data object to send
     let requestData = {

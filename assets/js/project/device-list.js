@@ -28,7 +28,7 @@ group_list.addEventListener('change', function () {
 var interval_Id;
 //setTimeout(refresh_data, 50);
 
-interval_Id = setInterval(refresh_data, 1200000);
+interval_Id = setInterval(refresh_data, 120000);
 
 function refresh_data() {
     /*if (typeof update_frame_time === "function") {
@@ -43,11 +43,8 @@ function refresh_data() {
       if (activePage) {
         var page= activePage.textContent;
         const itemsPerPage = document.getElementById('items-per-page').value;
-        add_device_list(group_name,page, itemsPerPage);
-
+        add_device_list(group_name,page, itemsPerPage);  
     }
-
-   
 
 }
 }
@@ -65,57 +62,82 @@ document.getElementById('items-per-page').addEventListener("change", function ()
 var pageNumber = 1;
 
 function add_device_list(group_id, page = 1, itemsPerPage = 20) {
+
     if (group_id !== "" && group_id !== null) {
-        // Show preloader at the start of function
-        $("#pre-loader").css('display', 'block');
-        
         $.ajax({
             type: "POST",
             url: '../device-list/code/device-list-table.php',
             traditional: true,
-            data: { GROUP_ID: group_id },
+            data: { 
+                GROUP_ID: group_id,
+                PAGE: page,
+                ITEMS_PER_PAGE: itemsPerPage
+            },
             dataType: "json",
-            success: function (data) {
+            success: function (response) {
                 const device_list_table = document.getElementById('device_list_table');
                 const pagination = $("#pagination");
                 device_list_table.innerHTML = '';
                 pagination.empty();
 
-                if (Object.keys(data).length) {
-                    const sortedData = data.sort(function (a, b) {
-                        return b.ACTIVE_STATUS - a.ACTIVE_STATUS;
-                    });
+                if (response.success && response.data && response.data.length > 0) {
+                    const data = response.data;
+                    
+                    // First, add all installed devices (IS_INSTALLED == 1)
+                    for (var i = 0; i < data.length; i++) {
+                        if (data[i].IS_INSTALLED == 1) {
+                            var newRow = document.createElement('tr');
+                            newRow.innerHTML =
+                                '<td>' + data[i].D_ID + '</td>' +
+                                '<td>' + data[i].D_NAME + '</td>' +
+                                '<td>' + data[i].INSTALLED_STATUS + '</td>' +
+                                '<td>' + data[i].INSTALLED_DATE + '</td>' +
+                                '<td>' + data[i].KW + '</td>' +
+                                '<td class="col-size-1">' + data[i].DATE_TIME + '</td>' +
+                                '<td>' + data[i].ON_OFF_STATUS + '</td>' +
+                                '<td>' + data[i].OPERATION_MODE + '</td>' +
+                                '<td>' + data[i].WORKING_STATUS + '</td>' +
+                                '<td>' + data[i].LMARK + '</td>' +
+                                '<td>' + data[i].INSTALLED_LIGHTS + '</td>' +
+                                '<td>' +
+                                '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + data[i].REMOVE + '\')"></i>' +
+                                '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + data[i].D_ID + '\', \'' + data[i].D_NAME + '\')"></i>' +
+                                '</td>';
+                            device_list_table.appendChild(newRow);
+                        }
+                    }
+                    
+                    // Then, add all not installed devices (IS_INSTALLED == 0)
+                    for (var i = 0; i < data.length; i++) {
+                        if (data[i].IS_INSTALLED == 0) {
+                            var newRow = document.createElement('tr');
+                            newRow.innerHTML =
+                                '<td>' + data[i].D_ID + '</td>' +
+                                '<td>' + data[i].D_NAME + '</td>' +
+                                '<td>' + data[i].INSTALLED_STATUS + '</td>' +
+                                '<td>' + data[i].INSTALLED_DATE + '</td>' +
+                                '<td>' + data[i].KW + '</td>' +
+                                '<td class="col-size-1">' + data[i].DATE_TIME + '</td>' +
+                                '<td>' + data[i].ON_OFF_STATUS + '</td>' +
+                                '<td>' + data[i].OPERATION_MODE + '</td>' +
+                                '<td>' + data[i].WORKING_STATUS + '</td>' +
+                                '<td>' + data[i].LMARK + '</td>' +
+                                '<td>' + data[i].INSTALLED_LIGHTS + '</td>' +
+                                '<td>' +
+                                '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + data[i].REMOVE + '\')"></i>' +
+                                '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + data[i].D_ID + '\', \'' + data[i].D_NAME + '\')"></i>' +
+                                '</td>';
+                            device_list_table.appendChild(newRow);
+                        }
+                    }
 
-                    const totalRecords = sortedData.length;
-                    const totalPages = Math.ceil(totalRecords / itemsPerPage);
-
-                    const startIndex = (page - 1) * itemsPerPage;
-                    const endIndex = startIndex + itemsPerPage;
-                    const paginatedData = sortedData.slice(startIndex, endIndex);
-
-                    paginatedData.forEach(function (row) {
-                        var newRow = document.createElement('tr');
-                        newRow.innerHTML =
-                            '<td>' + row.D_ID + '</td>' +
-                            '<td>' + row.D_NAME + '</td>' +
-                            '<td>' + row.INSTALLED_STATUS + '</td>' +
-                            '<td>' + row.INSTALLED_DATE + '</td>' +
-                            '<td>' + row.KW + '</td>' +
-                            '<td class="col-size-1">' + row.DATE_TIME + '</td>' +
-                            '<td>' + row.ON_OFF_STATUS + '</td>' +
-                            '<td>' + row.OPERATION_MODE + '</td>' +
-                            '<td>' + row.WORKING_STATUS + '</td>' +
-                            '<td>' + row.LMARK + '</td>' +
-                            '<td>' + row.INSTALLED_LIGHTS + '</td>' +
-                            '<td>' +
-                            '<i class="bi bi-trash-fill text-danger pointer h5" onclick="delete_device_id(this, \'' + row.REMOVE + '\')"></i>' +
-                            '<i class="bi bi-pencil-square text-primary pointer h5 ms-3" onclick="openEditModal(\'' + row.D_ID + '\', \'' + row.D_NAME + '\')"></i>' +
-                            '</td>';
-                        device_list_table.appendChild(newRow);
-                    });
+                    // Use server-provided pagination data
+                    const totalRecords = response.totalRecords || 0;
+                    const totalPages = response.totalPages || 0;
+                    const currentPage = response.currentPage || page;
 
                     // Render pagination with record count
-                    pagination_fun(pagination, totalPages, page, totalRecords, itemsPerPage);
+                    pagination_fun(pagination, totalPages, currentPage, totalRecords, itemsPerPage);
 
                     // Bind click event for pagination buttons with preloader
                     pagination.off("click").on("click", ".page-link", function (e) {
@@ -129,7 +151,8 @@ function add_device_list(group_id, page = 1, itemsPerPage = 20) {
 
                 } else {
                     var newRow = document.createElement('tr');
-                    newRow.innerHTML = '<td class="text-danger" colspan="12">Device List not found</td>';
+                    newRow.innerHTML = '<td class="text-danger" colspan="12">' + 
+                        (response.message || 'Device List not found') + '</td>';
                     device_list_table.appendChild(newRow);
                     
                     // Clear record count when no data
@@ -237,11 +260,6 @@ function updateRecordCount(currentPage, itemsPerPage, totalRecords) {
     }
 }
 
-// Optional: Function to manually trigger device list refresh with preloader
-function refreshDeviceList() {
-    $("#pre-loader").css('display', 'block');
-    add_device_list(group_name, pageNumber, itemsPerPage);
-}
 
 document.getElementById('newdeviceName').addEventListener('input', function () {
     var oldDeviceName = document.getElementById('olddeviceName').value;
