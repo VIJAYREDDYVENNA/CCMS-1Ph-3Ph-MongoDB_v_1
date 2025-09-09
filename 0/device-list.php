@@ -28,7 +28,7 @@ $role = $sessionVars['role'];
             include(BASE_PATH . "dropdown-selection/device-list.php");
             ?>
 
-            <div class="row justify-content-end align-items-center mt-3 p-0">
+            <div class="row justify-content-end align-items-center mt-2">
                 <div class="col-auto p-0 mb-2">
                     <div class="input-group">
                         <input type="text" class="form-control" placeholder="Search..." id="deviceListInput">

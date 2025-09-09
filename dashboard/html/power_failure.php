@@ -1,4 +1,4 @@
-<div class="modal fade" id="powerfailureModal" tabindex="-1" aria-labelledby="powerfailureModalLabel" aria-hidden="true" style="z-index: 2000;">
+<div class="modal fade" id="powerfailureModal" tabindex="-1" aria-labelledby="powerfailureModalLabel" aria-hidden="true" >
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">

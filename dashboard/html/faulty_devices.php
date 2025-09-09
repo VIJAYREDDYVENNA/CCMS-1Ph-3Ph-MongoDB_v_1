@@ -1,4 +1,4 @@
-<div class="modal fade" id="faultModal" tabindex="-1" aria-labelledby="faultModalLabel" aria-hidden="true" style="z-index: 2000;">
+<div class="modal fade" id="faultModal" tabindex="-1" aria-labelledby="faultModalLabel" aria-hidden="true" >
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">

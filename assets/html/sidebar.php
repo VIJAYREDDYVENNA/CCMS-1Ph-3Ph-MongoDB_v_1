@@ -197,6 +197,8 @@
 				<li><a href="custom-commands.php" class="nav-link link-body-emphasis d-inline-flex text-decoration-none rounded"><i class="bi bi-arrow-return-right"></i>Custom Commands</a></li>
 				<li><a href="add-new-client-details.php" class="nav-link link-body-emphasis d-inline-flex text-decoration-none rounded"><i class="bi bi-arrow-return-right"></i>Add New Client Details</a></li>
 				<li><a href="data-backup.php" class="nav-link link-body-emphasis d-inline-flex text-decoration-none rounded"><i class="bi bi-arrow-return-right"></i>Data Back-Up</a></li>
+				<li><a href="download-devicewise.php" class="nav-link link-body-emphasis d-inline-flex text-decoration-none rounded"><i class="bi bi-arrow-return-right"></i>Download Device Wise Data</a></li>
+				<li><a href="delete-devicewise-data.php" class="nav-link link-body-emphasis d-inline-flex text-decoration-none rounded"><i class="bi bi-arrow-return-right"></i>Delete Device Wise Data</a></li>
 
 			</ul>
 		</div>
