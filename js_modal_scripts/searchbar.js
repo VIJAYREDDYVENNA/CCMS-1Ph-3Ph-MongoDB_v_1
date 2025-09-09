@@ -91,22 +91,17 @@ document.getElementById("addButtonSearch").addEventListener("input", addButtonSe
 catch (e) {
    
 }
-var interval_Id1 =interval_Id ;
-//search script device list dastboard
 function deviceListSearch() {
     clearInterval(interval_Id);
     var input = document.getElementById("deviceListInput").value.toLowerCase().trim();
-    
-    // Only start searching if input has at least 3 characters
-    // if (input.length < 4) {
-    //     document.querySelectorAll(".deviceListSearch tbody tr").forEach(row => {
-    //         row.style.display = ""; // Show all rows when input is less than 3 characters
-    //         row.classList.remove("highlight");
-    //     });
-    //     return;
-    // }
-
     var rows = document.querySelectorAll(".deviceListSearch tbody tr");
+    var matchCount = 0;
+
+    // Remove any existing "no results" message
+    var existingNoResults = document.querySelector(".no-results-message");
+    if (existingNoResults) {
+        existingNoResults.remove();
+    }
 
     rows.forEach(row => {
         var cells = row.querySelectorAll("td");
@@ -121,18 +116,36 @@ function deviceListSearch() {
         if (match) {
             row.style.display = ""; // Show matching rows
             row.classList.add("highlight");
+            matchCount++;
         } else {
             row.style.display = "none"; // Hide non-matching rows
             row.classList.remove("highlight");
         }
     });
+
+    // If no matches found and there's a search term
+    if (matchCount === 0 && input.length > 0) {
+        showNoResultsMessage();
+    }
 }
 
+function showNoResultsMessage() {
+    var table = document.querySelector(".deviceListSearch");
+    var noResultsDiv = document.createElement("div");
+    noResultsDiv.className = "no-results-message";
+    noResultsDiv.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: #666; font-style: italic;" id="custom-message">
+            <p >No devices found on this page. Try on Other Page.</p>
+        </div>
+    `;
+    table.parentNode.insertBefore(noResultsDiv, table.nextSibling);
+}
 document.getElementById("deviceListInput").addEventListener("input", function () {
    // Call the search function on every input change
 
     // Restart the interval if input is cleared
     if (this.value.trim() === "") {
+        $('#custom-message').hide()
         // clearInterval(interval_Id); // Clear any existing interval
         let group_name = group_list.value;
 
