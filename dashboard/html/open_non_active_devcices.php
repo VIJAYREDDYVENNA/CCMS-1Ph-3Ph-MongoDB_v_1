@@ -10,7 +10,7 @@
                     <div class="col-12 rounded mt-3 p-0">
                         <div class="row">
                             <div class="col-12 col-md-4 pointer">
-                                <div class="card text-center shadow" onclick="openPoorNetwork()"id="poor_nw_device_list">
+                                <div class="card text-center shadow"id="poor_nw_device_list">
                                     <div class="card-body m-0 p-0">
                                         <p class="card-text fw-semibold m-0 py-1 text-warning-emphasis"><i class="bi bi-exclamation-triangle-fill h4"></i> Poor N/W</p>
                                         <!-- <hr class="mt-0"> -->
@@ -19,7 +19,7 @@
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 mt-3 mt-md-0 pointer">
-                                <div class="card text-center shadow" onclick="openPowerFail()"id="power_failure_device_list">
+                                <div class="card text-center shadow" id="power_failure_device_list">
                                     <div class="card-body m-0 p-0">
                                         <p class="card-text fw-semibold m-0 py-1 text-secondary-emphasis"><i class="bi bi-power h4"></i> Input Power Fail</p>
                                         <!-- <hr class="mt-0"> -->
@@ -28,7 +28,7 @@
                                 </div>
                             </div>
                             <div class="col-6 col-md-4 mt-3 mt-md-0 pointer">
-                                <div class="card text-center shadow" onclick="openFaulty()" id="faulty_device_list">
+                                <div class="card text-center shadow" id="faulty_device_list">
                                     <div class="card-body m-0 p-0">
                                         <p class="card-text fw-semibold m-0 py-1 text-danger-emphasis"><i class="bi bi-bug-fill h4"></i> Faulty</p>
                                         <!-- <hr class="mt-0"> -->

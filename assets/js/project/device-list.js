@@ -57,6 +57,8 @@ function refresh_data() {
 var itemsPerPage = 20;
 document.getElementById('items-per-page').addEventListener("change", function () {
     itemsPerPage = document.getElementById('items-per-page').value;
+    // Show preloader when items per page changes
+    $("#pre-loader").css('display', 'block');
     add_device_list(group_name, 1, itemsPerPage);
 });
 
@@ -64,6 +66,9 @@ var pageNumber = 1;
 
 function add_device_list(group_id, page = 1, itemsPerPage = 20) {
     if (group_id !== "" && group_id !== null) {
+        // Show preloader at the start of function
+        $("#pre-loader").css('display', 'block');
+        
         $.ajax({
             type: "POST",
             url: '../device-list/code/device-list-table.php',
@@ -109,12 +114,14 @@ function add_device_list(group_id, page = 1, itemsPerPage = 20) {
                         device_list_table.appendChild(newRow);
                     });
 
-                    // ✅ Render pagination with record count
+                    // Render pagination with record count
                     pagination_fun(pagination, totalPages, page, totalRecords, itemsPerPage);
 
-                    // ✅ Bind click event for pagination buttons
+                    // Bind click event for pagination buttons with preloader
                     pagination.off("click").on("click", ".page-link", function (e) {
                         e.preventDefault();
+                        // Show preloader when pagination button is clicked
+                        $("#pre-loader").css('display', 'block');
                         const newPage = $(this).data("page");
                         pageNumber = newPage;
                         add_device_list(group_id, parseInt(pageNumber), parseInt(itemsPerPage));
@@ -128,19 +135,26 @@ function add_device_list(group_id, page = 1, itemsPerPage = 20) {
                     // Clear record count when no data
                     updateRecordCount(0, 0, 0);
                 }
+                
+                // Hide preloader after successful data load
                 $("#pre-loader").css('display', 'none');
             },
             error: function () {
+                // Hide preloader on error
+                $("#pre-loader").css('display', 'none');
                 error_message_text.textContent = "Error getting the data";
                 error_toast.show();
-                $("#pre-loader").css('display', 'none');
             },
             failure: function () {
+                // Hide preloader on failure
+                $("#pre-loader").css('display', 'none');
                 error_message_text.textContent = "Failed to get the data";
                 error_toast.show();
-                $("#pre-loader").css('display', 'none');
             }
         });
+    } else {
+        // Hide preloader if group_id is invalid
+        $("#pre-loader").css('display', 'none');
     }
 }
 
@@ -223,6 +237,11 @@ function updateRecordCount(currentPage, itemsPerPage, totalRecords) {
     }
 }
 
+// Optional: Function to manually trigger device list refresh with preloader
+function refreshDeviceList() {
+    $("#pre-loader").css('display', 'block');
+    add_device_list(group_name, pageNumber, itemsPerPage);
+}
 
 document.getElementById('newdeviceName').addEventListener('input', function () {
     var oldDeviceName = document.getElementById('olddeviceName').value;

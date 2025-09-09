@@ -24,9 +24,7 @@ SessionManager::checkSession();
 			<div class="row">
 
 				<div class="col-12 p-0">
-
 					<div class="container-fluid text-center p-0 mt-3">
-
 						<div class="row d-flex align-items-center">
 							<div class="col-auto me-auto "><label><input type="checkbox" id="view_all_group_device"> View All</label> </div>
 							<div class="col-auto">
@@ -112,7 +110,7 @@ SessionManager::checkSession();
 										<div class="col-auto">
 											<label for="items-per-page" class="form-label">Items per page:</label>
 										</div>
-										<div class="col-auto">
+										<div class="col-auto d-flex justify-content-center flex-row">
 											<select id="items-per-page" class="form-select">
 												<option value="10">10</option>
 												<option value="20" selected>20</option>
@@ -120,10 +118,12 @@ SessionManager::checkSession();
 												<option value="100">100</option>
 
 											</select>
+											
+											<div class="col-auto m-2">
+												<span id="record-count-display" class="text-muted small"></span>
+											</div>
 										</div>
-										<div class="col-auto">
-											<span id="data-report-record-count" class="text-muted small fw-semibold">0-0 of 0</span>
-										</div>
+
 									</div>
 
 								</div>
