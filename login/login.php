@@ -18,7 +18,7 @@ $delete_status = 0;
 $credentials_check = false;
 
 // Input cleanup
-$user_login_id = trim(strtolower($user_login_id));
+$user_login_id = trim($user_login_id);
 $password = trim($password);
 
 
@@ -27,9 +27,9 @@ $login_collection = $user_db_conn->login_details;
 
 $r = $login_collection->findOne([
     '$or' => [
-        ['mobile_no' => (string)$user_login_id],     // try as int
-        ['email_id'  => (string)$user_login_id],  // emails are strings
-        ['user_id'   => (string)$user_login_id]   // user_id is string
+        ['mobile_no' => $user_login_id],
+        ['email_id'  => ['$regex' => '^' . preg_quote($user_login_id) . '$', '$options' => 'i']],
+        ['user_id'   => ['$regex' => '^' . preg_quote($user_login_id) . '$', '$options' => 'i']],
     ]
 ]);
 

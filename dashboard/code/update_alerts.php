@@ -30,13 +30,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 	$device_ids = explode(",", $user_devices);
 
     // explode string into array
-	$device_ids = array_map('trim', explode(",", $user_devices));
+	/*$device_ids = array_map('trim', explode(",", $user_devices));
+
+	$device_ids = array_filter(array_map(function($id) {
+		return trim($id, "'");
+	}, explode(",", $user_devices)));*/
 
 
 
-	$device_ids = array_map(function($id) {
-		return trim($id, "'");  
-	}, $device_ids);
+	$device_ids = array_filter(array_map(function($id) {
+		return trim($id, "'");
+	}, explode(",", $user_devices)));
 
 	if (empty($device_ids)) {
 		echo json_encode(['error' => 'No devices found for this group']);
@@ -84,4 +88,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
 
 	echo json_encode($return_response);
 }
-	?>
+?>
