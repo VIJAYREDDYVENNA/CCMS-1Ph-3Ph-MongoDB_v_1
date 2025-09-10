@@ -62,10 +62,14 @@ function generateFastCSVBackup($db, $device_id, $filename) {
     $collections = $db->listCollections();
     $totalDocs = 0;
 
+    $skipCollections = ["voltage_current_graph", "software_update", "live_data_updates"];
+
     foreach ($collections as $collectionInfo) {
         $collectionName = $collectionInfo->getName();
         
         if (strpos($collectionName, 'system.') === 0) continue;
+
+        if (in_array($collectionName, $skipCollections)) continue;
 
         $collection = $db->selectCollection($collectionName);
         
@@ -162,6 +166,11 @@ function generateFastJSONBackup($db, $device_id, $filename) {
         $collectionName = $collectionInfo->getName();
         
         if (strpos($collectionName, 'system.') === 0) continue;
+
+        if($collectionName=="voltage_current_graph")
+        {
+            break;
+        }
 
         $collection = $db->selectCollection($collectionName);
         
