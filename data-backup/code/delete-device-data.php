@@ -31,7 +31,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     try {
+        // Step 1: Check permission and date before proceeding
+        $permissionCheck = checkDeletionPermission($devices_db_conn, $device_id);
+        
+        if (!$permissionCheck['allowed']) {
+            echo json_encode([
+                'success' => false,
+                'no_permission' => true,
+                'error' => $permissionCheck['message']
+            ]);
+            exit;
+        }
+
+        // Step 2: Check if device has any data
+        $dataCheck = checkDeviceDataExists($devices_db_conn, $device_id);
+        
+        if (!$dataCheck['has_data']) {
+            echo json_encode([
+                'success' => false,
+                'no_data' => true,
+                'message' => 'No data found for this device ID, deletion cannot proceed'
+            ]);
+            exit;
+        }
+
+        // Step 3: Proceed with deletion
         $result = deleteDeviceDataFromAllCollections($devices_db_conn, $device_id);
+        
+        // Step 4: Update permission record after successful deletion
+        $updateResult = updatePermissionAfterDeletion($devices_db_conn, $device_id);
+        
+        if (!$updateResult['success']) {
+            error_log("Warning: Failed to update permission record after deletion for device {$device_id}: " . $updateResult['message']);
+        }
         
         // Log the deletion activity
         error_log("Device Data Deletion: Device ID {$device_id} - {$result['total_deleted']} documents deleted from {$result['collections_processed']} collections by user {$user_login_id}");
@@ -55,20 +87,203 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     echo json_encode(['error' => 'Method not allowed', 'success' => false]);
 }
 
+/**
+ * Check if deletion is permitted for the given device with date-time validation
+ */
+function checkDeletionPermission($db, $device_id) {
+    try {
+        $permissionCollection = $db->selectCollection('data_delete_permission');
+        
+        // Find permission record for this device
+        $permissionDoc = $permissionCollection->findOne(['device_id' => $device_id]);
+        
+        if (!$permissionDoc) {
+            return [
+                'allowed' => false,
+                'message' => 'No permission record found for this device ID'
+            ];
+        }
+        
+        // Check if permission is explicitly true (boolean)
+        if (!isset($permissionDoc['permission']) || $permissionDoc['permission'] !== true) {
+            return [
+                'allowed' => false,
+                'message' => 'Deletion permission is denied for this device ID'
+            ];
+        }
+        
+        // Check updated_date against current date-time with 20-minute window
+        $currentDateTime = new DateTime();
+        
+        if (!isset($permissionDoc['updated_date'])) {
+            return [
+                'allowed' => false,
+                'message' => 'Permission record missing updated_date field'
+            ];
+        }
+        
+        // Convert updated_date to DateTime object
+        $updatedDateTime = null;
+        $updatedDate = $permissionDoc['updated_date'];
+        
+        if ($updatedDate instanceof MongoDB\BSON\UTCDateTime) {
+            $updatedDateTime = $updatedDate->toDateTime();
+        } elseif (is_string($updatedDate)) {
+            try {
+                $updatedDateTime = new DateTime($updatedDate);
+            } catch (Exception $e) {
+                return [
+                    'allowed' => false,
+                    'message' => 'Invalid updated_date format in permission record'
+                ];
+            }
+        } else {
+            return [
+                'allowed' => false,
+                'message' => 'Invalid updated_date type in permission record'
+            ];
+        }
+        
+        // Calculate time difference in minutes
+        $timeDifferenceSeconds = $currentDateTime->getTimestamp() - $updatedDateTime->getTimestamp();
+        $timeDifferenceMinutes = $timeDifferenceSeconds / 60;
+        
+        // Check if updated_date is within the last 20 minutes
+        if ($timeDifferenceMinutes > 20) {
+            return [
+                'allowed' => false,
+                'message' => 'Deletion permission has expired. Permission is only valid for 20 minutes after being granted'
+            ];
+        }
+        
+        // Check if updated_date is in the future (should not happen, but safety check)
+        if ($timeDifferenceMinutes < 0) {
+            return [
+                'allowed' => false,
+                'message' => 'Permission updated_date cannot be in the future'
+            ];
+        }
+        
+        return [
+            'allowed' => true,
+            'message' => sprintf('Permission granted. Valid for %.1f more minutes', 20 - $timeDifferenceMinutes)
+        ];
+        
+    } catch (Exception $e) {
+        error_log("Permission check error: " . $e->getMessage());
+        return [
+            'allowed' => false,
+            'message' => 'Error checking deletion permission: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Update permission record after successful deletion
+ */
+function updatePermissionAfterDeletion($db, $device_id) {
+    try {
+        $permissionCollection = $db->selectCollection('data_delete_permission');
+        
+        $updateResult = $permissionCollection->updateOne(
+            ['device_id' => $device_id],
+            [
+                '$set' => [
+                    'permission' => false
+                ]
+            ]
+        );
+        
+        if ($updateResult->getModifiedCount() > 0) {
+            return [
+                'success' => true,
+                'message' => 'Permission record updated successfully'
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Permission record was not updated (no matching document found or no changes made)'
+            ];
+        }
+        
+    } catch (Exception $e) {
+        error_log("Permission update error: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Error updating permission record: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Check if device has any data in any collection
+ */
+function checkDeviceDataExists($db, $device_id) {
+    try {
+        $collections = $db->listCollections();
+        $totalDocuments = 0;
+        
+        // Define collections to skip
+        $skipCollections = ["voltage_current_graph", "data_delete_permission"];
+
+        foreach ($collections as $collectionInfo) {
+            $collectionName = $collectionInfo->getName();
+            
+            // Skip system collections and specified collections
+            if (strpos($collectionName, 'system.') === 0 || in_array($collectionName, $skipCollections)) {
+                continue;
+            }
+
+            try {
+                $collection = $db->selectCollection($collectionName);
+                $documentCount = $collection->countDocuments(['device_id' => $device_id]);
+                $totalDocuments += $documentCount;
+                
+                // If we find any data, we can return early
+                if ($totalDocuments > 0) {
+                    break;
+                }
+                
+            } catch (Exception $e) {
+                // Log error but continue checking other collections
+                error_log("Error checking collection {$collectionName}: " . $e->getMessage());
+                continue;
+            }
+        }
+
+        return [
+            'has_data' => $totalDocuments > 0,
+            'total_documents' => $totalDocuments
+        ];
+        
+    } catch (Exception $e) {
+        error_log("Data existence check error: " . $e->getMessage());
+        return [
+            'has_data' => false,
+            'total_documents' => 0
+        ];
+    }
+}
+
+/**
+ * Delete device data from all collections
+ */
 function deleteDeviceDataFromAllCollections($db, $device_id) {
     $collections = $db->listCollections();
     $totalDeleted = 0;
     $collectionsProcessed = 0;
-    // $collectionDetails = []; // Commented out - not showing detailed breakdown
     $errors = [];
+    
+    // Define collections to skip
+    $skipCollections = ["voltage_current_graph", "data_delete_permission"];
 
     $skipCollections = ["voltage_current_graph", "software_update", "live_data_updates"];
 
     foreach ($collections as $collectionInfo) {
         $collectionName = $collectionInfo->getName();
         
-        // Skip system collections
-        if (strpos($collectionName, 'system.') === 0) {
+        // Skip system collections and specified collections
+        if (strpos($collectionName, 'system.') === 0 || in_array($collectionName, $skipCollections)) {
             continue;
         }
         if (in_array($collectionName, $skipCollections)) {
@@ -90,31 +305,10 @@ function deleteDeviceDataFromAllCollections($db, $device_id) {
                 $totalDeleted += $deletedCount;
                 $collectionsProcessed++;
                 
-                // Commented out - detailed collection tracking not needed for now
-                /*
-                $collectionDetails[] = [
-                    'collection_name' => $collectionName,
-                    'documents_found' => $documentCount,
-                    'documents_deleted' => $deletedCount,
-                    'status' => 'success'
-                ];
-                */
-                
                 // Log progress for large collections
                 if ($deletedCount > 1000) {
                     error_log("Deleted {$deletedCount} documents from collection {$collectionName} for device {$device_id}");
                 }
-            } else {
-                // No documents found for this device in this collection
-                // Commented out - not tracking empty collections
-                /*
-                $collectionDetails[] = [
-                    'collection_name' => $collectionName,
-                    'documents_found' => 0,
-                    'documents_deleted' => 0,
-                    'status' => 'no_data'
-                ];
-                */
             }
             
         } catch (Exception $e) {
@@ -122,17 +316,6 @@ function deleteDeviceDataFromAllCollections($db, $device_id) {
                 'collection_name' => $collectionName,
                 'error' => $e->getMessage()
             ];
-            
-            // Commented out - not tracking detailed error info per collection
-            /*
-            $collectionDetails[] = [
-                'collection_name' => $collectionName,
-                'documents_found' => 'unknown',
-                'documents_deleted' => 0,
-                'status' => 'error',
-                'error' => $e->getMessage()
-            ];
-            */
             
             error_log("Error deleting from collection {$collectionName}: " . $e->getMessage());
         }
@@ -142,23 +325,28 @@ function deleteDeviceDataFromAllCollections($db, $device_id) {
         'device_id' => $device_id,
         'total_deleted' => $totalDeleted,
         'collections_processed' => $collectionsProcessed,
-        // 'collection_details' => $collectionDetails, // Commented out - not showing detailed breakdown
         'errors' => $errors,
         'deletion_completed_at' => date('Y-m-d H:i:s')
     ];
 }
 
-// Alternative faster deletion function for very large datasets
+/**
+ * Alternative faster deletion function for very large datasets
+ */
 function fastDeleteDeviceData($db, $device_id) {
     $collections = $db->listCollections();
     $totalDeleted = 0;
     $collectionsProcessed = 0;
     $errors = [];
+    
+    // Define collections to skip
+    $skipCollections = ["voltage_current_graph", "data_delete_permission"];
 
     foreach ($collections as $collectionInfo) {
         $collectionName = $collectionInfo->getName();
         
-        if (strpos($collectionName, 'system.') === 0) {
+        // Skip system collections and specified collections
+        if (strpos($collectionName, 'system.') === 0 || in_array($collectionName, $skipCollections)) {
             continue;
         }
 
