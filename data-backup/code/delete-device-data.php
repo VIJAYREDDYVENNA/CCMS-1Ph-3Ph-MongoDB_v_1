@@ -62,6 +62,8 @@ function deleteDeviceDataFromAllCollections($db, $device_id) {
     // $collectionDetails = []; // Commented out - not showing detailed breakdown
     $errors = [];
 
+    $skipCollections = ["voltage_current_graph", "software_update", "live_data_updates"];
+
     foreach ($collections as $collectionInfo) {
         $collectionName = $collectionInfo->getName();
         
@@ -69,6 +71,10 @@ function deleteDeviceDataFromAllCollections($db, $device_id) {
         if (strpos($collectionName, 'system.') === 0) {
             continue;
         }
+        if (in_array($collectionName, $skipCollections)) {
+            continue
+        };
+
 
         try {
             $collection = $db->selectCollection($collectionName);
