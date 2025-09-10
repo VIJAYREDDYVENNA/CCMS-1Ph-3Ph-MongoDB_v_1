@@ -12,6 +12,7 @@ SessionManager::checkSession();
 $sessionVars = SessionManager::SessionVariables();
 $user_login_id = $sessionVars['user_login_id'];
 
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $device_id = filter_input(INPUT_POST, 'D_ID', FILTER_SANITIZE_STRING);
     $parameter = filter_input(INPUT_POST, 'PARAMETER', FILTER_SANITIZE_STRING);
@@ -31,6 +32,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             generateFastJSONBackup($devices_db_conn, $device_id, $filename);
         }
+
+        // After successful backup, update document_delete_permissions
+        updateDocumentDeletePermissions($devices_db_conn, $device_id);
 
     } catch (Exception $e) {
         error_log("MongoDB Backup Error: " . $e->getMessage());
@@ -140,7 +144,6 @@ function generateFastCSVBackup($db, $device_id, $filename) {
 
     fwrite($output, "\nTotal Documents: {$totalDocs}\n");
     fclose($output);
-    exit;
 }
 
 function generateFastJSONBackup($db, $device_id, $filename) {
@@ -230,7 +233,6 @@ function generateFastJSONBackup($db, $device_id, $filename) {
     }
 
     echo '},"total_documents":' . $totalDocs . '}';
-    exit;
 }
 
 // Extremely fast BSON conversion - minimal processing
@@ -256,5 +258,44 @@ function fastConvertBSON($document) {
     }
     
     return $data;
+}
+
+// Function to update document_delete_permissions collection
+function updateDocumentDeletePermissions($db, $device_id) {
+    try {
+        $collection = $db->selectCollection('data_delete_permission');
+        $currentDateTime = new MongoDB\BSON\UTCDateTime();
+        
+        // Check if device_id already exists in the collection
+        $existingDoc = $collection->findOne(['device_id' => $device_id]);
+        
+        if ($existingDoc) {
+            // Update existing document - only update permission and updated_date
+            $result = $collection->updateOne(
+                ['device_id' => $device_id],
+                [
+                    '$set' => [
+                        'updated_date' => $currentDateTime
+                    ]
+                ]
+            );
+            
+            error_log("Updated document_delete_permissions for device_id: {$device_id}");
+        } else {
+            // Insert new document with all required fields
+            $result = $collection->insertOne([
+                'device_id' => $device_id,
+                'permission' => true,
+                'inserted_date' => $currentDateTime,
+                'updated_date' => $currentDateTime
+            ]);
+            
+            error_log("Inserted new record in document_delete_permissions for device_id: {$device_id}");
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error updating document_delete_permissions: " . $e->getMessage());
+        // Don't throw exception as backup was successful, just log the error
+    }
 }
 ?>
