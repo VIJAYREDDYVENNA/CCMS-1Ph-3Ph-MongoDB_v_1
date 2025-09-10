@@ -33,13 +33,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["GROUP_ID"])) {
     }
 
     // explode string into array
-    $device_ids = array_map('trim', explode(",", $user_devices));
+
 
     $return_response = "";
-
+    
+   /* $device_ids = array_map('trim', explode(",", $user_devices));
     $device_ids = array_map(function($id) {
         return trim($id, "'");  
-    }, $device_ids);
+    }, $device_ids);*/
+
+    $device_ids = array_filter(array_map(function($id) {
+        return trim($id, "'");
+    }, explode(",", $user_devices)));
 
 
 // Query MongoDB

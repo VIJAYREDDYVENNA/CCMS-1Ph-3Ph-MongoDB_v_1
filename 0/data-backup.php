@@ -23,37 +23,425 @@ SessionManager::checkSession();
             include(BASE_PATH . "dropdown-selection/group-device-list.php");
             ?>
 
-            <div class="row my-4">
-                <div class="col-12 col-md-6">
+            <div class="row my-4 justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Backup Data</h5>
-                            <p>Select the format for backing up your data:</p>
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-                                <button class="btn btn-primary btn-block mb-2" id="backup-excel" onclick="data_backup('backup-excel')">Backup in Excel</button>
-                                <button class="btn btn-secondary btn-block mb-2" id="backup-sql" onclick="data_backup('backup-sql')">Backup in SQL</button>
+                             <div class="row mt-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="card  border-0 rounded-3">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title mb-3">Download Device Data</h5>
+                                            <button class="btn btn-primary px-4" id="backup-excel" onclick="data_backup('backup-excel')">
+                                                <i class="bi bi-download me-2"></i> Backup in Excel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                 <div class="col-12 col-md-6">
+                                    <div class="card  border-0 rounded-3">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title mb-3 text-danger">Delete Device Data</h5>
+                                            <button class="btn btn-danger px-4" id="backup-excel" onclick="showDeleteConfirmationModal()">
+                                                <i class="bi bi-trash me-2"></i> Delete Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reset Section -->
-                <div class="col-12 col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Reset Device</h5>
-                            <p>Click the button below to reset all data:</p>
-                            <button class="btn btn-danger btn-block mb-2" id="reset-data" onclick="reset()">Reset Device</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+</div>
 
-    <script src="<?php echo BASE_PATH; ?>assets/js/project/data-backup.js"></script>
-    <script src="<?php echo BASE_PATH; ?>assets/js/sidebar-menu.js"></script>
-    <?php
-    include(BASE_PATH . "assets/html/body-end.php");
-    include(BASE_PATH . "assets/html/html-end.php");
-    ?>
+<!-- All your existing modals and toast containers remain the same -->
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmationModalLabel">⚠️ Confirm Data Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger" role="alert">
+                    <strong>WARNING:</strong> This action will PERMANENTLY DELETE ALL DATA for device <strong id="modalDeviceId"></strong> from ALL collections in the database.
+                </div>
+                <p class="text-danger fw-bold">This action CANNOT be undone!</p>
+                <hr>
+                <div class="mb-3">
+                    <label for="confirmDeviceId" class="form-label">To confirm deletion, please re-enter the Device ID:</label>
+                    <input type="text" class="form-control" id="confirmDeviceId" placeholder="Enter Device ID">
+                    <div class="form-text">Device ID must match exactly to proceed with deletion.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="proceedWithDeletion()">
+                    <i class="bi bi-trash me-2"></i> Delete All Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="successModalLabel">✅ Deletion Successful</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="successModalBody">
+                <!-- Success message will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="errorModalLabel">❌ Deletion Failed</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="errorModalBody">
+                <!-- Error message will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="noDataToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-warning text-dark">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong class="me-auto">No Data Found</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            No data found for this device ID, deletion cannot proceed
+        </div>
+    </div>
+
+    <div id="noPermissionToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+            <i class="bi bi-shield-exclamation me-2"></i>
+            <strong class="me-auto">Permission Denied</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Deletion permission is denied for this device ID
+        </div>
+    </div>
+
+    <div id="deviceMismatchToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+            <i class="bi bi-x-circle-fill me-2"></i>
+            <strong class="me-auto">Device ID Mismatch</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Device ID not matched, deletion cannot proceed
+        </div>
+    </div>
+</div>
+
+<!-- <script src="<?php echo BASE_PATH; ?>assets/js/project/data-backup.js"></script> -->
+<script src="<?php echo BASE_PATH; ?>assets/js/sidebar-menu.js"></script>
+<?php
+include(BASE_PATH . "assets/html/body-end.php");
+include(BASE_PATH . "assets/html/html-end.php");
+?>
+
+<!-- Your existing JavaScript remains exactly the same -->
+<script>
+    // Combined Data Backup and Deletion Script
+// Handles both backup downloads and data deletion with confirmation
+
+// Initialize variables from localStorage and DOM
+var group_name = localStorage.getItem("GroupNameValue");
+if (group_name == "" || group_name == null) {
+    group_name = "ALL";
+}
+
+let device_id = localStorage.getItem("SELECTED_ID");
+if (!device_id) {
+    device_id = document.getElementById('device_id')?.value;
+}
+
+// Setup device ID change listener
+let device_id_list = document.getElementById('device_id');
+if (device_id_list) {
+    device_id_list.addEventListener('change', function() {
+        device_id = document.getElementById('device_id').value;
+    });
+}
+
+// =============================================================================
+// DATA BACKUP FUNCTIONS
+// =============================================================================
+
+function data_backup(parameter) {
+    // Check if device ID is selected
+    if (!device_id || device_id === "") {
+        alert("Please select a device before downloading backup.");
+        return;
+    }
+
+    // Confirmation before downloading
+    let fileType = parameter === "backup-sql" ? "SQL" : "CSV";
+    let confirmMessage = `Are you sure you want to download ${fileType} backup for device ${device_id}?`;
+
+    if (!confirm(confirmMessage)) {
+        return; // User cancelled the operation
+    }
+
+    // Show loading indicator
+    $("#pre-loader").css('display', 'block');
+
+    // Set the URL for backup download
+    let url = '../data-backup/code/download-device-wise-data.php';
+
+    // Create the data object to send
+    let requestData = {
+        D_ID: device_id,
+        PARAMETER: parameter
+    };
+
+    // Using jQuery AJAX with xhr to handle binary data
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: requestData,
+        xhrFields: {
+            responseType: 'blob' // Important for handling binary data
+        },
+        success: function(data, status, xhr) {
+            // Get the filename from the Content-Disposition header if available
+            let filename = "backup_" + device_id + "_" + new Date().toISOString().replace(/[:.]/g, "-") +
+                (parameter === "backup-sql" ? ".sql" : ".csv");
+
+            let contentDisposition = xhr.getResponseHeader('Content-Disposition');
+            if (contentDisposition) {
+                let filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1];
+                }
+            }
+
+            // Create a download link and trigger it
+            let blobUrl = window.URL.createObjectURL(data);
+            let link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            window.URL.revokeObjectURL(blobUrl);
+            document.body.removeChild(link);
+
+            // Show success message
+            setTimeout(function() {
+                alert(`${fileType} backup for ${device_id} has been successfully downloaded.`);
+            }, 500);
+        },
+        error: function(xhr, status, error) {
+            // Parse error response if possible
+            let errorMessage = "Download failed. Please try again.";
+
+            try {
+                let response = JSON.parse(xhr.responseText);
+                if (response && response.message) {
+                    errorMessage = response.message;
+                }
+            } catch (e) {
+                // If parsing fails, use the default message
+            }
+
+            alert("Error: " + errorMessage);
+        },
+        complete: function() {
+            // Hide loading indicator when done (success or error)
+            $("#pre-loader").css('display', 'none');
+        }
+    });
+}
+
+// =============================================================================
+// DATA DELETION FUNCTIONS
+// =============================================================================
+
+function showDeleteConfirmationModal() {
+    // Check if device ID is selected
+    if (!device_id || device_id === "") {
+        showToast('deviceMismatchToast', 'Please select a device before deleting data.');
+        return;
+    }
+
+    // Set device ID in modal
+    document.getElementById('modalDeviceId').textContent = device_id;
+    document.getElementById('confirmDeviceId').value = '';
+    
+    // Show the modal
+    var modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+    modal.show();
+}
+
+function proceedWithDeletion() {
+    const enteredDeviceId = document.getElementById('confirmDeviceId').value.trim();
+    
+    // Validate entered device ID
+    if (enteredDeviceId !== device_id) {
+        // Hide the modal first
+        var modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
+        modal.hide();
+        
+        // Show toast notification
+        setTimeout(function() {
+            showToast('deviceMismatchToast');
+        }, 300);
+        return;
+    }
+
+    // Hide the confirmation modal
+    var modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
+    modal.hide();
+
+    // Proceed with deletion
+    delete_devicedata('delete-data');
+}
+
+function delete_devicedata(parameter) {
+    // Show loading indicator
+    $("#pre-loader").css('display', 'block');
+
+    // Disable the delete button to prevent multiple clicks
+    $("#backup-excel").prop('disabled', true).html('<i class="bi bi-hourglass-split me-2"></i> Deleting...');
+
+    // Create the data object to send
+    let requestData = {
+        D_ID: device_id,
+        PARAMETER: parameter
+    };
+
+    // Using jQuery AJAX to handle the deletion
+    $.ajax({
+        url: '../data-backup/code/delete-device-data.php',
+        type: 'POST',
+        data: requestData,
+        dataType: 'json',
+        timeout: 600000, // 10 minutes timeout for large deletions
+        success: function(response) {
+            if (response.success) {
+                // Handle different success scenarios
+                if (response.no_data) {
+                    showToast('noDataToast');
+                } else {
+                    // Show success modal
+                    let successMessage = `<div class="alert alert-success" role="alert">`;
+                    successMessage += `<h6>Deletion Completed Successfully!</h6>`;
+                    successMessage += `<hr>`;
+                    successMessage += `<p><strong>Device ID:</strong> ${device_id}</p>`;
+                    successMessage += `<p><strong>Total Documents Deleted:</strong> ${response.details.total_deleted}</p>`;
+                    successMessage += `<p><strong>Collections Processed:</strong> ${response.details.collections_processed}</p>`;
+                    successMessage += `<p><strong>Completed At:</strong> ${response.details.deletion_completed_at}</p>`;
+
+                    if (response.details.errors && response.details.errors.length > 0) {
+                        successMessage += `<div class="alert alert-warning mt-2">⚠️ Note: ${response.details.errors.length} collections had errors during deletion.</div>`;
+                    }
+                    successMessage += `</div>`;
+
+                    document.getElementById('successModalBody').innerHTML = successMessage;
+                    var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                }
+            } else {
+                // Handle specific error types
+                if (response.no_permission) {
+                    showToast('noPermissionToast');
+                } else if (response.no_data) {
+                    showToast('noDataToast');
+                } else {
+                    showErrorModal("Deletion Failed: " + (response.error || "Unknown error occurred"));
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            let errorMessage = "Deletion Failed!<br><br>";
+
+            if (status === 'timeout') {
+                errorMessage += "The deletion operation timed out. This might be due to a large amount of data.<br>";
+                errorMessage += "Some data may have been deleted. Please check the database and try again if needed.";
+            } else {
+                try {
+                    let response = JSON.parse(xhr.responseText);
+                    if (response && response.error) {
+                        errorMessage += response.error;
+                    } else {
+                        errorMessage += `Error: ${error}<br>Status: ${status}`;
+                    }
+                } catch (e) {
+                    errorMessage += `Error: ${error}<br>Status: ${status}`;
+                }
+            }
+
+            showErrorModal(errorMessage);
+        },
+        complete: function() {
+            // Hide loading indicator and restore button
+            $("#pre-loader").css('display', 'none');
+            $("#backup-excel").prop('disabled', false).html('<i class="bi bi-trash me-2"></i> Delete Data');
+        }
+    });
+}
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+function showErrorModal(message) {
+    document.getElementById('errorModalBody').innerHTML = `<div class="alert alert-danger">${message}</div>`;
+    var errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    errorModal.show();
+}
+
+function showToast(toastId, customMessage = null) {
+    const toastElement = document.getElementById(toastId);
+    if (customMessage) {
+        const toastBody = toastElement.querySelector('.toast-body');
+        toastBody.textContent = customMessage;
+    }
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+}
+
+// =============================================================================
+// EVENT LISTENERS
+// =============================================================================
+
+// Clear the input when modal is hidden
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteConfirmationModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('hidden.bs.modal', function () {
+            document.getElementById('confirmDeviceId').value = '';
+        });
+    }
+});
+</script>

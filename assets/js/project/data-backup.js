@@ -155,7 +155,7 @@ function data_backup(parameter) {
         D_ID: device_id,
         PARAMETER: parameter
     };
-    
+    console.log(requestData);
     // Using jQuery AJAX with xhr to handle binary data
     $.ajax({
         url: url,
